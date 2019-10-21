@@ -1,0 +1,87 @@
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+TeX: {
+equationNumbers: {
+autoNumber: "all",
+formatNumber: function (n) {return ''+n}
+}
+}});</script>
+
+# Gradient Descent Variants
+There are three variants to gradient descent and they are:    
+
+* Batch Gradient Descent    
+* Stochastic Gradient Descent     
+* Mini-batch Gradient Descent      
+
+They are distinguished by the amount of data that is used to compute the gradient of the objective function, which affects the accuracy of the parameter updates, and the time complexity of the algorithm.
+
+## Batch Gradient Descent
+Batch gradient descent (BGD) computes the gradient of the objective function with respect to the parameters $\theta$ using the *entire* training set in a single batch.  
+
+```{python intro_bgd, echo=TRUE, eval=FALSE}
+theta = np.random.rand(data.shape[1])
+for i in range(epochs):
+  gradient = compute_gradient(loss_function, data, theta)
+  theta = theta - learning_rate * gradient
+```
+
+First, we randomly initialize the parameters $\theta$. Then, for a designated number of epochs, we compute the gradient of the loss function, for the entire data set, with respect to the parameters $\theta$. Next, we update the parameters $\theta$ in the direction of the negative gradient, scaled by the learning rate.
+
+### Pros
+* Batch gradient descent is guaranteed to converge to a global minimum for convex error surfaces and to a local minimum if the error manifold is non-convex.
+* Using the entire dataset yields unbiased, more stable estimates of the true gradients.   
+* By averaging the gradient over all examples, the optimization path has fewer oscillations and less noise as it converges towards its minimum.    
+* The gradient computation can be vectorized, allowing for parallelized computation and exploitation of GPU architectures. 
+
+### Cons
+* Despite vectorization, computing the gradient is very expensive because it evaluates the model on every example in the entire data set.          
+* Each update requires every example, even though some examples may be redundant, contributing little to the gradient.       
+* Renders a stable error gradient which is unable to escape saddle points and sub-optimal local minima for non-convex error surfaces.   
+* The entire training set must be memory resident, which becomes intractable for very large training sets.    
+
+## Stochastic Gradient Descent
+Stochastic gradient descent (SGD), in contrast to batch gradient descent, computes the parameter update for *each* training example.
+
+```{python intro_sgd, echo=TRUE, eval=FALSE}
+theta = np.random.rand(data.shape[1])
+for i in range(epochs):
+  np.random.shuffle(data)
+  for example in data:
+    gradient = compute_gradient(loss_function, example, theta)
+    theta = theta - learning_rate * gradient
+```
+The SGD algorithm differs from batch gradient descent in two respects. First, we shuffle the data at the beginning of each epoch to avoid cycles in the learning process. Second, the gradient computation and parameter updates occur within an inner loop that iterates over each example.
+
+### Pros
+* Greater computation and memory efficiency since each update is based upon just a single example. This computational efficiency is often leveraged by performing many more iterations of SGD than would be performed using batch gradient descent.
+* Large datasets tend to train faster with SGD than with BGD, due to higher frequency parameter updates.     
+* For non-convex error manifolds, SGD tends to produce better results than those of BGD. The SGD optimization path is characterized by greater noise and volatility. This additional energy can enable gradient descent to escape saddle points and suboptimal local minima.    
+
+### Cons   
+* Processing a single example at a time loses the computational advantages of vectorized and parallelized operations.    
+* The high variance in the gradient computations complicates convergence as it causes SGD to overshoot and oscillate around the exact minimum. However, it has been shown that slowly decreasing the learning rate enables SGD to achieve the same convergence behaviour as batch gradient descent, converging to local or the global minimum for non-convex and convex optimization respectively [@Ruder2016]. 
+
+## Mini-batch Gradient Descent
+Mini-batch gradient descent stakes out the goldilocks zone between batch gradient descent and SGD by performing the parameter updates after each mini-batch of $n$ training examples. 
+
+```{python intro_mbgd, echo=TRUE, eval=FALSE}
+theta = np.random.rand(data.shape[1])
+for i in range(epochs):
+  np.random.shuffle(data)
+  for batch in get_batches(data, batch_size=32):
+    gradient = compute_gradient(loss_function, batch, theta)
+    theta = theta - learning_rate * gradient
+```
+
+As with stochastic gradient descent, we shuffle the data, then iterate through a batch generator. This generator  yields batches of $m^\prime$ training examples, where $m^\prime$ typically ranges from about 32 to a few hundred in powers of two. For each batch, we compute the gradient of the loss function with respect to the parameters $\theta$, then perform the updates in accordance with the negative gradient and the learning rate. 
+
+### Pros
+* With smaller batch sizes, mini-batch gradient descent can make problems involving large datasets more computationally tractable than they would otherwise be with batch gradient descent.   
+* Mini-batch gradient descent can produce gradient estimates as good as (or no worse than) the gradient estimates from batch gradient descent. The full training set is likely to include noise, outliers, and redundant samples. Recall that the training set is an *approximation* of a true data generating distribution and is likely to include noise, outliers, and redundant samples. Any randomly sampled mini-batch may reflect the *true* data generating distribution as effectively as the full training set. Averaging over several iterations of the mini-batch gradient descent can produce better gradient estimates than those computed from a full batch.     
+* Mini-batch gradients combine the stability of batch gradient descent with the noise of stochastic gradient descent. As such, it produces a lower-variance gradient with enough noise to escape local minima of non-convex error surfaces.  
+* Mini-batch gradient descent can produce models with acceptable generalization error faster than batch and stochastic gradient descent. Larger batch sizes (>1) reduce the variance of stochastic updates by taking the average of the gradient over the mini-batch. This allows one to take larger steps towards the optimum. The computational benefit comes from the fact that a large mini-batch is trivial to parallelized on a GPU, multiple GPUs or multiple machines.  With smaller batch sizes (<m), mini-batch gradient descent allows one to iterate over the error surface faster than with batch gradient descent. As stated above, average gradients over a mini-batch oftentimes approximate the true data generating distribution as well as batch gradient does.
+
+### Cons    
+* Mini-batch gradient descent requires careful tuning of batch size and learning rate. Large batch sizes allows one to use larger learning rates, up to an algorithmic, problem specific upper bound which depends on the smoothness of the objective function. (The theoretical limit is typically 1/L, where L is the Lipschitz constant of the "full" gradient). 
+* Mini-batch gradient descent applies the same learning rate to every gradient update. As the gradient approaches its optimum, smaller learning rates are often needed. In such situations, one may consider increasing the batch size rather than reducing the learning rate for improved parallelism.  

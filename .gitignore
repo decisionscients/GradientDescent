@@ -6,6 +6,15 @@ __pycache__/
 # C extensions
 *.so
 
+# Content to filter
+content/*.html
+figures/*.gif
+/figures
+
+# Filter bibliography files
+content/*.bib
+!content/Machine Learning.bib
+
 # Distribution / packaging
 .Python
 env/

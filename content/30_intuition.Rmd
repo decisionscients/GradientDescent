@@ -1,0 +1,376 @@
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+TeX: {
+equationNumbers: {
+autoNumber: "all",
+formatNumber: function (n) {return ''+n}
+}
+}});</script>
+
+# Gradient Descent Intuition
+This is section __ of a 6-part series on Gradient Descent. Our objective here is to developing the mathematical intuition behind gradient descent. 
+
+In the prior section, we defined the model representation of a supervised learning prediction problem in terms of a hypothesis function for predictions, a cost function that quantifies a penalty for bad predictions, the gradient and an iterative algorithm that uses the gradient to find the minimum of the cost function. 
+
+In this section, we unveal the underlying mathematical concepts of gradient descent in order to really understand how gradient descent works.
+
+With that, let's start with the relatively trivial task of minimizing a linear function. 
+
+## How to minimize a linear function?
+Consider the linear function of the form:
+$$f(x)=\theta^Tx+b$$
+where     
+
+* $x \in \mathbb{R}^n$ is an $n$-vector,    
+* $\theta \in \mathbb{R}^n$ is an $n$-vector, and   
+* $b \in \mathbb{R}$ is a scalar.
+
+```{python linear, results='hide', code=readLines('./code/linear.py')}
+```
+
+For illustration purposes, the following plot of $f(x)$ assumes $n=1$. 
+![](/figures/linear.jpg)
+
+`r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`: Differentiability
+Suppose you are currently at a point $x\in\mathbb{R}^n$, and you wish to find the minimum of the function. You are allowed to move in any direction you like, but you may move at most one unit of Euclidean distance. In which direction should you move to decrease the function $f$ as much as possible, and how much will the function decrease? 
+
+To answer these questions, let $u\in\mathbb{R}^n$ be a unit vector. Moving from $x$ one unit of distance in the direction of $u$ changes our objective function as follows:
+
+$$
+\begin{align}
+c^Tx + b & \to c^T(x+u)+b \\
+& = c^Tx + b+c^Tu \\
+& = c^Tx + b + \|c\|_2\space\|u\|_2\space \text{cos}\space\theta
+\end{align}
+$$
+where $\theta$ denotes the angle between the vectors $c$ and $u$. In order to decrease $f$ as much as possible, we must make $\text{cos}\space\theta$ as small as possible (i.e.-1). We do this by choosing $u$ to point in the opposite direction of $c$, such that $u=\frac{-c}{\|c\|_2}$. 
+
+Therefore, the main take-away is this.  We minimize $f$ the most by moving in the direction of the **steepest descent**, $-c$, for a rate of decrease $\|c\|_2$ [@Roughgarden2018].
+
+
+
+## How do we minimizing a univariate differentiable Function?
+### Differentiable Functions
+First, let's clarify what we mean by *differentiable* function. `r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")` illustrates both differentiable and non-differentiable functions.
+
+![](./figures/differentiability.jpg)
+
+`r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`: Differentiability
+
+According to our wikipedia friends, "a univariate differentiable function is one whose derivative exists at each point in its domain. We'll clarify what we mean by a derivative in a minute, but this simply means that the graph of a differentiable function must have a (non-vertical) tangent line at each point in its domain, be relatively smooth, and cannot contain any breaks, bends, or cusps " [@wiki:Differentiable]. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Now, we consider the same question for a differentiable function $f(x)=x^2$.
+
+```{python univariate, results='hide', code=readLines('./code/univariate.py')}
+```
+`r kfigr::figr(label = "univariate", prefix = TRUE, link = TRUE, type="Figure")`: Univariate Differentiable Function $f(x)=x^2$
+
+Our goal is to move from point $A$ to the minimum at point $B$, so how do we do that.
+
+> The key to minimizing any differentiable function, is to reduce it to a linear function.
+
+This may sound glib, especially given the crazy forms differentiable functions can take. But calculus promises that, for a point suitably close to $a$, one can pretend that the true function $f$ is just a linear function at $f(a)$. Once we have expressed our optimization problem in terms of a linear function, we can use properties of differentiation to optimize the true function $f$. 
+
+To see this, we'll need to review some calculus and clarify what it means for a function to be differentiable.
+
+## Calculus Revisited
+Here, we explore the essential ideas from univariate calculus - calculus involving equations with a single variable. We'll start by:      
+
+* clarifying what we mean by 'differentiable' function,      
+* formally defining the notion of the derivative,      
+* interpreting the tangent line as the best local linear approximation of a univariate differentiable function.
+* reviewing the process of differentiation 
+
+Once we've covered the univariate concepts, we'll move on to the multivariate ideas surrounding the gradient. We'll address questions such as:     
+
+* How is the gradient formally defined?      
+* Why is the gradient the direction of steepest ascent?     
+* How do we compute the gradient?     
+
+### Univariate Calculus Revisited
+
+#### Differentiable Functions
+According to our wikipedia friends, "a differentiable function of one real variable is a function whose derivative exists at each point in its domain. As a result, the graph of a differentiable function must have a (non-vertical) tangent line at each point in its domain, be relatively smooth, and cannot contain any breaks, bends, or cusps " [@wiki:Differentiable].
+
+![](./figures/differentiability.jpg)
+
+`r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`: Differentiability
+
+Consider the functions $f : (a,b) \to \mathbb{R}$ and $a<x_0<b$ as depicted in `r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`. Each of the functions on the top row meet the following criteria:     
+
+1. They are continuous over $f : (a,b) \to \mathbb{R}$.          
+2. They are smooth over $f : (a,b) \to \mathbb{R}$.    
+3. The functions have no vertical tangent lines over their domains.
+
+The functions on the bottom row are not differentiable as they fail to meet the criteria above.  
+
+The formal definition of differentiability involves the notion of the **derivative**.
+
+#### The Derivative
+More formally, a function is said to be differentiable at $x_0$ if the following limit exists:
+$$\displaystyle{\lim_{h \to0}}\Big[\frac{f(x_0+h)-f(x_0)}{h}\Big].$$
+This limit is called the derivative of $f(x_0)$, denoted as $f^\prime(x_0)$. 
+
+```{python derivative, results='hide', code=readLines('./code/derivative.py')}
+```
+`r kfigr::figr(label = "derivative", prefix = TRUE, link = TRUE, type="Figure")`: Derivative of a Univariate Differentiable Function
+
+To develop the intuition behind the derivative as a limit, consider the function $f(x)=x^2$ as specified in `r kfigr::figr(label = "derivative", prefix = TRUE, link = TRUE, type="Figure")`. Select a value along the x-axis, say $a$, then designate the corresponding point on the curve, $P=f(a)$. Now, move along the x-axis some distance $h$ from $a$ to a new point $a+h$, then plot the corresponding point $Q=f(a+h)$. Next, draw the secant line $PQ$ connecting the two points. Now for the crucial part. Reduce $h$ such that the variable point $Q$ approaches the fixed point $P$ by sliding along the curve. 
+
+What do we notice? First, the secant changes direction as $Q$ approaches point $P$. As the absolute value of $h$ decreases, the value of $a+h$ approaches $a$, and the value of $f(a+h)$ approaches $f(a)$. It should be intuitively clear that the tangent line is the limit approached by the secant as $h\to0$. The slope of the secant line connecting the points ($a+h,f(a+h)$) and ($a,f(a)$) is the difference in the $y$ values over the difference between the $x$ values. This **difference quotient** becomes:
+$$m=\frac{\Delta y}{\Delta x}=\frac{f(a+h)-f(a)}{h}$$
+Hence small values of $h$ that approach zero render secant lines that are increasingly better approximations of the tangent line to $f(x)$ at $a$. Since the limiting position as $h \to 0$ of the secant line is the tangent line, the difference quotient as $h \to 0$, if it exists, will be the slope of the tangent line at ($a, f(a)$). This limit is defined as the *derivative* of the function $f$ at $a$:
+$$f^\prime(a)=\lim_{h\to0}\frac{f(a+h)-f(a)}{h}$$
+#### Tangent Line Equation
+Now that we've specified the derivative, we can derive the equation for the tangent line. The difference quotient is
+$$m=\frac{\Delta y}{\Delta x}=\frac{y-y_0}{x-x_0}=\frac{f(a+h)-f(a)}{(a+h)-a}=\frac{f(a+h)-f(a)}{h},$$
+where $h=(x-a)$.
+
+Using derivatives, we've shown that the slope $m$ approaches the slope of the tangent line $f^\prime(a)$ as $h\to0$. Substituting $f^\prime(a)$ for $m$ and rearranging into point slope form yields:
+$$y=f(a)+f^\prime(a)(x-a).$$
+So, what is the interpretation of the tangent line?  How does it help us to minimize differentiable functions?
+
+#### The Interpretation of the Tangent Line
+Recall that calculus promises that, for a function $f(a)$ and a point suitably close to $a$, one can pretend that the true function $f$ is just a linear function at $f(a)$. This leads us to the most salient interpretation of the tangent line, and it is this.
+
+> The tangent line of a univariate, differentiable function $f$ at point $a$ is the best local linear approximation of $f$ at $a$. 
+
+If we were to zoom into the graph of a function $f$ at a point $a$ using a high-powered microscope (or look at it over a small enough interval), the curve of the function would appear to become increasingly straight. In fact, if we observe $f$ at the intersection of the tangent line, the curve and the tangent line would become qualitatively indistinguishable for all points *near* the point of intersection. 
+
+In fact, the tangent is the *unique* linear function that has the same function value $f(x)$ and derivative at point $a$, in this sense it is **best linear approximation** to $f$ at $a$. (See [@Bivens1986] for a formal proof.) 
+
+So, now that we have a definition of the derivative, let's review techniques for computing derivatives.
+
+#### Differentiation
+Differentiation is the process of finding the derivative of a differentiable function. There are two approaches to differentiation. One approach is to use the geometric definition, but this can be quite a slow and cumbersome process. Fortunately, we have a small number of rules that enable us to differentiate large classes of functions quickly.
+
+For the following exhibit, let, $u=x^2$, $v=4x^3$, and $y=u^9$
+
+`r kfigr::figr(label = "differential", prefix = TRUE, link = TRUE, type="Table")`: Differentiation Rules
+```{r differential, results='asis'}
+tbl <- "
+|     Rule         |  Definition             |                    Example                   |
+|------------------|:-----------------------:|:--------------------------------------------:|
+| Constants Rule   | $\\frac{d}{dx}c=0$      |  $\\frac{d}{dx}5=0$|
+| Power Rule   | $\\frac{d}{dx}x^n=nx^{n-1}$ |  $\\frac{d}{dx}v=12x^3$|
+| Constant Factor Rule | $\\frac{d}{dx}(cu)=c\\frac{du}{dx}$| $\\frac{d}{dx}3x^2=3\\frac{d}{dx}x^2=6x$|
+| Sum Rule | $\\frac{d}{dx}(u+v)=\\frac{du}{dx}+\\frac{dv}{dx}$ | $\\frac{d}{dx}(x^2+4x^3)=\\frac{d}{dx}x^2+\\frac{d}{dx}4x^3=2x+12x^2$|
+| Subtraction Rule |$\\frac{d}{dx}(u-v)=\\frac{du}{dx}-\\frac{dv}{dx}$ | $\\frac{d}{dx}(x^2-4x^3)=\\frac{d}{dx}x^2-\\frac{d}{dx}4x^3=2x-12x^2$|
+| Product Rule | $\\frac{d}{dx}(uv)=u\\frac{dv}{dx}+v\\frac{du}{dx}$ | $\\frac{d}{dx}(x^2\\times 4x^3)=x^2 \\times 12x^2 + 4x^3 \\times 2x$ |
+| Quotient Rule | $\\frac{d}{dx}(\\frac{u}{v})=\\frac{v\\frac{du}{dx}-u\\frac{dv}{dx}}{v^2}$ for $v\\ne 0$ | $\\frac{d}{dx}(\\frac{u}{v})=\\frac{4x^3\\times 2x - x^2\\times 12x^2}{16x^6}$ |
+| Chain Rule | $\\frac{dy}{dx}=\\frac{dy}{du}\\times \\frac{du}{dx}$ | $\\frac{dy}{dx} = 9u^8 \\times 2x = 9(x^2)^8 \\times 2x=18x^{17}$|
+
+"
+cat(tbl)
+```
+
+For practice, let's run through an example. 
+$$\frac{d}{dx}\bigg[\frac{2x+4}{3x-1}\bigg]^3$$
+1. Let $y=f(u)=u^3$ and $u=g(x)=\frac{2x+4}{3x-1}$    
+2. Then $f^\prime(u)=3u^2$ by the power rule.    
+3. Applying the quotient rule to obtain $g^\prime(x)$, we have    
+$$\frac{d}{dx}\bigg[\frac{2x+4}{3x-1}\bigg]= \frac{(3x-1)(2)-(2x+4)(3)}{(3x-1)^2}=\frac{-14}{(3x-1)^2}$$
+4. Hence, by the chain rule we have:  
+$$
+\begin{align}
+F^\prime(x) & =f^\prime(g(x))\times g^\prime(x) \\
+& = 3\bigg(\frac{2x+4}{3x-1}\bigg)^2 \times \frac{-14}{(3x-1)^2} \\
+& = \frac{-42(2x+4)^2}{(3x-1)^4}
+\end{align}
+$$ 
+As we've seen the rules of differentiation can allow us to find the derivatives relatively quickly without dealing with limits.  
+
+Ok, we've adequately covered differentiability and differentation. Let's move onto the multivariate calculus ideas behind the gradient. 
+
+### Multivariate Calculus Revisited
+So far, we have been dealing with single variable functions such as $f(x)=x^2: \mathbb{R}\to\mathbb{R}$. These functions take a single variable as input and produce a single real number as output. Multivariate calculus extends the concepts of differentiation to functions with multiple variables. Here, we will develop the notions of the partial and directional derivatives, the underpinning concepts behind the gradient.  
+
+#### Multivariate Functions
+In general, there are two types of multivariate functions: scalar-valued functions and vector-valued functions. 
+
+#### Scalar-Valued Functions
+A multivariate scalar-valued function such $f(x,y)=x^2+y$ is a function in two variables. It takes input of $\mathbb{R^2}$ such as $(3,5)$ and returns a real-valued number of $\mathbb{R}$, like $f(3,5)=14$. Since $f$ maps $\mathbb{R^2}$ to $\mathbb{R}$, we write $f: \mathbb{R^2}\to\mathbb{R}$. A scalar-valued function can have any arbitrary number of variables. For instance $f(x,y,z)$, which we write as $f: \mathbb{R^3}\to\mathbb{R}$, is a scalar-valued function of three variables.
+
+#### Vector-Valued Functions
+In contrast, a vector-valued function takes one or more inputs and produces output in the form of a vector. First, let's examine vector-valued functions of a single variable. 
+
+A single variable vector-value function such as 
+$$
+f(x) = 
+\begin{bmatrix}
+2x+3 \\
+-x \\
+\end{bmatrix}
+,
+$$
+can be written as $f:\mathbb{R}\to\mathbb{R^2}$. For a given real-valued number, say $x=2$, we have:
+$$
+f(2) = 
+\begin{bmatrix}
+7 \\
+-2 \\
+\end{bmatrix}.
+$$
+Lastly, we have multiple variable vector-valued functions such as:
+$$
+f(x,y) = 
+\begin{bmatrix}
+2x+y \\
+-x^y \\
+\end{bmatrix}
+,
+$$
+which can be written as $f: \mathbb{R^2}\to\mathbb{R^2}$. Again, multiple variable vector-valued functions may have any number of variables and dimensions.
+
+With that, let's extend the concept of the derivative to the multivariable setting, starting with the partial derivative.
+
+#### Partial Derivative
+The partial derivative of a multivariable function tells you how much the function changes as you tweak just one of the variables in its input. In other words, it is the rate at which the output of $f$ changes as we nudge just one of the input variables slightly.
+
+##### Visualizing the Partial Derivative
+```{python partial, code=readLines('./code/partial.py')}
+```
+
+To graphically illustrate, let $f(x,y) = x^2+xy-y^2$ and consider the task of finding the partial derivative of $f(x,y)$ with respect to $x$ and $y$ at a $f(-2,-2)$. We can visualize the surface plot for the equation as follows. 
+
+![](./figures/multivariable_function.png)
+
+`r kfigr::figr(label = "multivariable", prefix = TRUE, link = TRUE, type="Figure")`: Surface plot for $f(x,y) = x^2+xy-y^2$
+
+First, let's consider $\frac{\partial{f}}{\partial{x}}$, the partial derivative of $f$ with respect to $x$ This means that we treat $y$ as constant and compute the effect of small changes in $x$ on $f$. 
+
+One way to visualize this is to inject a plane into the surface plot at some constant value for $y$.  Since we are seek the $\frac{\partial{f}}{\partial{x}}$ at $(-2,-2)$, let's plot a plane through the surface at $y=-2$.
+
+![](./figures/partial_wrt_x.png)
+
+`r kfigr::figr(label = "partial_x", prefix = TRUE, link = TRUE, type="Figure")`: Surface plot for $\frac{\partial{f}}{\partial{x}}$
+
+The plane in `r kfigr::figr(label = "partial_x", prefix = TRUE, link = TRUE, type="Figure")`, provides a cross-section into $f$, revealing the behavior of the function for $y=-2$. The red line is the tangent line to $f$ at $(-2,-2)$ in the direction of the $x$ axis. The slope of the tangent line is  $\frac{\partial{f}}{\partial{x}}$, the partial derivative of $f$ with respect to $x$ at $(-2,-2)$.
+
+The graph of the $\frac{\partial{f}}{\partial{y}}$, the partial derivative of $f$ with respecct to $y$ at $(-2,-2)$ is similarly obtained by taking the cross-section into $f(x,y)$ at some constant value of $x$. This time we will take the cross section at $x=-2$.
+
+![](./figures/partial_wrt_y.png)
+
+`r kfigr::figr(label = "partial_y", prefix = TRUE, link = TRUE, type="Figure")`: Surface plot for $\frac{\partial{f}}{\partial{y}}$
+
+The red tangent line in `r kfigr::figr(label = "partial_y", prefix = TRUE, link = TRUE, type="Figure")`, is the linear approximation of $f$ in the direction of the $y$ axis.  The slope of this tangent line is $\frac{\partial{f}}{\partial{y}}$, the partial derivative with respect to $y$ at $(-2,-2)$.
+
+Now that we have a graphical intuition, let's review how the partial derivative of a multivariable function is computed.
+
+##### Computing the Partial Derivative
+Consider our function:
+$$f(x,y) = x^2+xy-y^2$$
+How would we evaluate $\frac{\partial{f}}{\partial{x}}$, the partial derivative with respect to $x$ at input $(-2, -2)$? 
+
+The good news is that we use the same mechanics as an ordinary derivative. Since we only care about movement in the $x-$direction, we might as well treat the $y-$value as a constant.  In fact, we may can just plug in $y=-2$ into $f$ before computing any derivatives:
+$$f(x,-2) = x^2+x(-2)-(-2)^2=x^2-2x+4$$
+Now, $\frac{\partial{f}}{\partial{x}}$, the partial derivative with respect to $x$ is just an ordinary univarite derivative.
+$$\frac{\partial}{\partial{x}}f(x,-2)=2x-2$$
+Similarly, we can find $\frac{\partial{f}}{\partial{y}}$, the partial derivative with respect to $y$ by plugging in $x=-2$ into $f$:
+$$f(-2,y) = (-2)^2+(-2)y-y^2=4-2y-y^2$$
+Similarly, $\frac{\partial{f}}{\partial{y}}$, the partial derivative with respect to $y$ is just:
+$$\frac{\partial}{\partial{y}}f(-2,y)=-2y-2$$
+The previous example showed us how to compute the partial derivatives at a specific point. To generalize this, we need a way to compute the rates of change of $f$ near any point $(x,y)$. In other words, we need a new multivariable function which takes any point $(x,y)$ as input and tells us the rate of change of $f$ near that point as we move purely in the $x-$direction for $\frac{\partial{f}}{\partial{x}}$ or $y-$direction for $\frac{\partial{f}}{\partial{y}}$. 
+
+To compute $\frac{\partial{f}}{\partial{x}}$, the partial derivative with respect to x for any $(x,y)$ we treat the $y$ variable as a constant, then take the derivative. Recall that the derivative of a constant is 0. Hence, 
+$$\frac{\partial}{\partial{x}}f(x,y)=\frac{\partial}{\partial{x}}x^2+xy-y^2=2x+y.$$
+Treating $x$ as a constant, we can compute $\frac{\partial{f}}{\partial{y}}$, the partial derivative with respect to $y$ as:
+$$\frac{\partial}{\partial{y}}f(x,y)=\frac{\partial}{\partial{y}}x^2+xy-y^2=x-2y.$$
+
+#### The Gradient
+Now that we've explored *partial* derivatives of multivariable functions, you may be wondering what *full* derivative of such as function is.  For **scalar-valued multivariable functions**, the answer is the gradient.
+
+The gradient is the vector-valued, multivariable generalization of the derivative [@gradient]. The gradient of a scalar-valued multivariable function $f(x,y,...)$, denoted as $\nabla{f}$, packages all if its partial derivative information into a vector, e.g.:
+$$
+\nabla{f} = 
+\begin{bmatrix}
+\frac{\partial{f}}{\partial{x}} \\
+\frac{\partial{f}}{\partial{y}} \\
+\vdots
+\end{bmatrix}
+$$
+
+##### Gradient Example in Two Dimensions
+For example, let $f(x,y)=x^2+xy$, then the gradient is defined as:
+$$
+\nabla{f} = 
+\begin{bmatrix}
+\frac{\partial{f}}{\partial{x}} \\
+\frac{\partial{f}}{\partial{y}} \\
+\end{bmatrix}
+= 
+\begin{bmatrix}
+2x+y \\
+x \\
+\end{bmatrix}
+$$
+##### Gradient Example in Three Dimensions
+In this example, let $f(x,y,z)=x-xy+z^2$, then the gradient at $f(3,3,3)$ is:
+$$
+\nabla{f} = 
+\begin{bmatrix}
+\frac{\partial{f}}{\partial{x}} \\
+\frac{\partial{f}}{\partial{y}} \\
+\frac{\partial{f}}{\partial{z}} \\
+\end{bmatrix}
+= 
+\begin{bmatrix}
+1-y \\
+-x \\
+2z \\
+\end{bmatrix}
+= 
+\begin{bmatrix}
+-2 \\
+-3 \\
+6 \\
+\end{bmatrix}
+$$
+
+##### Interpreting the Gradient
+The most germain interpretation of the gradient to optimization is that the gradient of a function $f$ is a vector that points in the direction of the **steepest ascent** of $f$ at a point.
+
+To prove this, we need to develop the **directional derivative**. The directional derivative is a generalization of the partial derivative that measures rates of change of a function in any arbitrary direction. First, we specify directions as unit vectors whose lengths equal 1. Let $\mathbb{u}$ be such a unit vector, $\|\mathbb{u}\|=1$. Then, lets define the *directional derivative* of $f$ in the direction of $\mathbb{u}$ as being the limit:
+$$D_uf(a)=\lim_{h\to0}\frac{f(a+\textit{h}\mathbb{u})-f(a)}{\textit{h}}.$$
+This is the rate of change of $f$ as $x\to a$ in the direction of $\mathbb{u}$. As we know, the tangent line is a good approximation of a single variable function at a point. Analogously, a multivariable function $f$, if differentiable, is well approximated by the tangent *plane*.  The linear function $g$ for the tangent plane is given by:
+$$g(x)=f(a)+f_{x_1}(a)(x_1-a_1)+\dots +f_{x_n}(a)(x_n-a_n).$$
+Therefore,
+$$
+\begin{align}
+D_uf(a) & = \lim_{h\to0}\frac{f(a+hu)-f(a)}{h} \\
+& = \lim_{h\to0}\frac{g(a+hu)-f(a)}{h} \\
+& = \lim_{h\to0}\frac{f_{x_1}(a)hu_1+f_{x_2}(a)hu_2+\dots+f_{x_n}(a)hu_n}{h} \\
+& = f_{x_1}(a)u_1+f_{x_2}(a)u_2+\dots+f_{x_n}(a)u_n,
+\end{align}
+$$
+where $x_i \in x_1,x_2,\cdots ,x_n$ and $f_{x_i}=\frac{\partial{f}}{\partial{x_i}}$. 
+
+Observe that the gradient of $f$ is $<f_{x_1}(a),f_{x_2}(a),\dots+f_{x_n}(a)>$. Hence the directional derivative is simply the dot product of the gradient and the direction
+$$D_uf(a)=\nabla f(a)\cdot \mathbb{u}.$$
+
+The gradient $\nabla f(a)$ is a vector in a specific direction. Let $\mathbb{u}$ be a unit vector in any direction, and let $\theta$ be the angle between $\nabla f(a)$ and $\mathbb{u}$. Now we can rewrite the directional derivative
+$$D_uf(a)=\nabla f(a)\cdot\mathbb{u}=\|\nabla f(a)\|\|u\|\space cos\space\theta$$
+
+Since $D_uf(a)$ is largest when $cos\space\theta=1$, $\theta$ must be 0. Hence, $u$ points in the direction of the gradient $\nabla f(a)$. So, we conclude that $\nabla f(a)$ points in the direction of the greatest increase of $f$, that is, the direction of the **steepest ascent**.
+
+## Computing the Gradient from Data
