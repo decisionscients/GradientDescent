@@ -8,30 +8,29 @@ formatNumber: function (n) {return ''+n}
 }});</script>
 
 # Gradient Descent Intuition
-This is section __ of a 6-part series on Gradient Descent. Our objective here is to developing the mathematical intuition behind gradient descent. 
+This is section __ of a 6-part series on Gradient Descent. Our objective here is to developing the mathematical intuition behind gradient descent. In the prior section, we defined the model representation of a supervised learning prediction problem in terms of a hypothesis function for predictions, a cost function that quantifies a penalty for bad predictions, the gradient and an iterative algorithm that uses the gradient to find the minimum of the cost function. In this section, we unveal the underlying mathematical concepts of gradient descent in order to really understand how gradient descent works.
 
-In the prior section, we defined the model representation of a supervised learning prediction problem in terms of a hypothesis function for predictions, a cost function that quantifies a penalty for bad predictions, the gradient and an iterative algorithm that uses the gradient to find the minimum of the cost function. 
+With that, let's start with a question. 
 
-In this section, we unveal the underlying mathematical concepts of gradient descent in order to really understand how gradient descent works.
+## What Problem Does Gradient Descent Solve?   
+Gradient descent is about solving such *unconstrained optimization* problems. That is, for a cost function, or any real-valued function $f:\mathbb{R}^n \to \mathbb{R}$ defined on $n$-dimensional Euclidean space, the goal is:
+$$\text{min} \space f(x)$$
+subject to 
+$$x \in \mathbb{R}^n.$$
+Here, $x$ is an $n$ dimension, real-valued, vector.
 
-With that, let's start with the relatively trivial task of minimizing a linear function. 
 
-## How to minimize a linear function?
+So, how do we minimize $f(x)$? Let's start with the rather trivial task of minimizing a linear function. 
+
+### Minimizing Linear Functions 
 Consider the linear function of the form:
-$$f(x)=\theta^Tx+b$$
+$$f(x)=c^Tx+b$$
 where     
 
 * $x \in \mathbb{R}^n$ is an $n$-vector,    
-* $\theta \in \mathbb{R}^n$ is an $n$-vector, and   
+* $c \in \mathbb{R}^n$ is an $n$-vector, and   
 * $b \in \mathbb{R}$ is a scalar.
 
-```{python linear, results='hide', code=readLines('./code/linear.py')}
-```
-
-For illustration purposes, the following plot of $f(x)$ assumes $n=1$. 
-![](/figures/linear.jpg)
-
-`r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`: Differentiability
 Suppose you are currently at a point $x\in\mathbb{R}^n$, and you wish to find the minimum of the function. You are allowed to move in any direction you like, but you may move at most one unit of Euclidean distance. In which direction should you move to decrease the function $f$ as much as possible, and how much will the function decrease? 
 
 To answer these questions, let $u\in\mathbb{R}^n$ be a unit vector. Moving from $x$ one unit of distance in the direction of $u$ changes our objective function as follows:
@@ -47,41 +46,10 @@ where $\theta$ denotes the angle between the vectors $c$ and $u$. In order to de
 
 Therefore, the main take-away is this.  We minimize $f$ the most by moving in the direction of the **steepest descent**, $-c$, for a rate of decrease $\|c\|_2$ [@Roughgarden2018].
 
-
-
-## How do we minimizing a univariate differentiable Function?
-### Differentiable Functions
-First, let's clarify what we mean by *differentiable* function. `r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")` illustrates both differentiable and non-differentiable functions.
-
-![](./figures/differentiability.jpg)
-
-`r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`: Differentiability
-
-According to our wikipedia friends, "a univariate differentiable function is one whose derivative exists at each point in its domain. We'll clarify what we mean by a derivative in a minute, but this simply means that the graph of a differentiable function must have a (non-vertical) tangent line at each point in its domain, be relatively smooth, and cannot contain any breaks, bends, or cusps " [@wiki:Differentiable]. 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+### Minimizing Differentiable Function?
 Now, we consider the same question for a differentiable function $f(x)=x^2$.
 
-```{python univariate, results='hide', code=readLines('./code/univariate.py')}
+```{python univariate, results='hide', code=readLines('./src/univariate.py')}
 ```
 `r kfigr::figr(label = "univariate", prefix = TRUE, link = TRUE, type="Figure")`: Univariate Differentiable Function $f(x)=x^2$
 
@@ -131,7 +99,7 @@ More formally, a function is said to be differentiable at $x_0$ if the following
 $$\displaystyle{\lim_{h \to0}}\Big[\frac{f(x_0+h)-f(x_0)}{h}\Big].$$
 This limit is called the derivative of $f(x_0)$, denoted as $f^\prime(x_0)$. 
 
-```{python derivative, results='hide', code=readLines('./code/derivative.py')}
+```{python derivative, results='hide', code=readLines('./src/derivative.py')}
 ```
 `r kfigr::figr(label = "derivative", prefix = TRUE, link = TRUE, type="Figure")`: Derivative of a Univariate Differentiable Function
 
@@ -248,7 +216,7 @@ With that, let's extend the concept of the derivative to the multivariable setti
 The partial derivative of a multivariable function tells you how much the function changes as you tweak just one of the variables in its input. In other words, it is the rate at which the output of $f$ changes as we nudge just one of the input variables slightly.
 
 ##### Visualizing the Partial Derivative
-```{python partial, code=readLines('./code/partial.py')}
+```{python partial, code=readLines('../src/example/partial.py')}
 ```
 
 To graphically illustrate, let $f(x,y) = x^2+xy-y^2$ and consider the task of finding the partial derivative of $f(x,y)$ with respect to $x$ and $y$ at a $f(-2,-2)$. We can visualize the surface plot for the equation as follows. 
