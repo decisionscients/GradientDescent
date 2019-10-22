@@ -2,9 +2,11 @@
 #                                 LIBRARIES                                    #
 # ============================================================================ #
 #%%
-import plotly.offline as pyo
-import plotly.graph_objs as go
+from IPython.display import HTML
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 
 from content.code.filemanager import save_fig
 # ============================================================================ #

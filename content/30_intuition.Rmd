@@ -8,21 +8,65 @@ formatNumber: function (n) {return ''+n}
 }});</script>
 
 # Gradient Descent Intuition
-This is section __ of a 6-part series on Gradient Descent. Our objective here is to developing the mathematical intuition behind gradient descent. In the prior section, we defined the model representation of a supervised learning prediction problem in terms of a hypothesis function for predictions, a cost function that quantifies a penalty for bad predictions, the gradient and an iterative algorithm that uses the gradient to find the minimum of the cost function. In this section, we unveal the underlying mathematical concepts of gradient descent in order to really understand how gradient descent works.
+This is section __ of a 6-part series on Gradient Descent. Our objective here is to developing the mathematical intuition behind gradient descent. 
 
-With that, let's start with a question. 
+In the prior section, we defined the model representation of a supervised learning prediction problem in terms of a hypothesis function for predictions, a cost function that quantifies a penalty for bad predictions, the gradient and an iterative algorithm that uses the gradient to find the minimum of the cost function. 
 
-## What Problem Does Gradient Descent Solve?   
-Gradient descent is about solving such *unconstrained optimization* problems. That is, for a cost function, or any real-valued function $f:\mathbb{R}^n \to \mathbb{R}$ defined on $n$-dimensional Euclidean space, the goal is:
+In this section, we unveal the underlying mathematical concepts of gradient descent in order to really understand how it works.
+
+With that, let's start with a question.
+
+> What Problem Does Gradient Descent Solve?   
+
+Gradient descent is about solving such *unconstrained optimization* problems. That is, for an objective function $f:\mathbb{R}^n \to \mathbb{R}$ defined on $n\ge1$-dimensional Euclidean space and a data vector $x\in\mathbb{R}^n$, the goal is:
 $$\text{min} \space f(x)$$
-subject to 
-$$x \in \mathbb{R}^n.$$
-Here, $x$ is an $n$ dimension, real-valued, vector.
+For this piece, we will assume that our objective functions are differentiable.  
+![](./figures/differentiability.jpg)
+
+`r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`: Differentiability
+
+As shown in the top row of `r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`, a differentiable function is one whose derivative exists at each point in its domain. Hence, it has a (non-vertical) tangent line at each point in its domain, it is relatively smooth, and does not contain any breaks, bends, or cusps.
+
+There are extensions of gradient descent that relax the differentiability assumption, but those are a subject of another post.
+
+> How to minimize a univariate differentiable function?
+
+Let's first suppose that $n=1$, so that $f : \mathbb{R} \to \mathbb{R}$ is a univariate real-valued function as shown in `r kfigr::figr(label = "convex", prefix = TRUE, link = TRUE, type="Figure")`.
+
+```{python convex_univariate, results='hide', code=readLines('./code/univariate.py')}
+```
+```{r convex_univariate_r, echo=FALSE}
+htmltools::includeHTML("convex.html")
+```
+`r kfigr::figr(label = "convex_univariate", prefix = TRUE, link = TRUE, type="Figure")`: Convex univariate objective function
+
+So, how would we minimize $f(x)$? Well, if we were at point $x0$ on `r kfigr::figr(label = "convex_univariate", prefix = TRUE, link = TRUE, type="Figure")`, we observe that the graph is increasing to the left and decreasing to the right, so we move to the right. Starting at $x1$, we move to the left to make $f$ as small as possible. In either case, we eventually arrive at the bottom of the basin, which happens to be the *global* minimum for $f$. 
+
+To be more precise, the basic algorithm for minimizing a univariate ($n=1$) differentiable function uses the derivative, $f^\prime(x)$, to determine in which direction to move, and is given by:
+
+1. while $f^\prime(x)\ne0$
+
+  (a) if $f^\prime(x)>0$, $f$ is increasing, move a $x$ a little to the left;
+  (b) if $f^\prime(x)<0$, $f$ is decreasing, move a $x$ a little to the left;
+
+For our 
+
+
+
+
+
+
+
+
+
+
+
 
 
 So, how do we minimize $f(x)$? Let's start with the rather trivial task of minimizing a linear function. 
 
-### Minimizing Linear Functions 
+> How do we minimize a linear function?
+
 Consider the linear function of the form:
 $$f(x)=c^Tx+b$$
 where     
@@ -43,13 +87,43 @@ c^Tx + b & \to c^T(x+u)+b \\
 \end{align}
 $$
 where $\theta$ denotes the angle between the vectors $c$ and $u$. In order to decrease $f$ as much as possible, we must make $\text{cos}\space\theta$ as small as possible (i.e.-1). We do this by choosing $u$ to point in the opposite direction of $c$, such that $u=\frac{-c}{\|c\|_2}$. 
-
 Therefore, the main take-away is this.  We minimize $f$ the most by moving in the direction of the **steepest descent**, $-c$, for a rate of decrease $\|c\|_2$ [@Roughgarden2018].
 
-### Minimizing Differentiable Function?
+
+In order to understand how gradient descent does its magic, let's start with a univariate differentiable function.  
+> How does one minimize a univariate differentiable linear function?
+
+First, let's define our terms. A differentiable function of one real variable is a function whose derivative exists at each point in its domain. That means that a non-vertical tangent line exists for at each point in the function's domain.
+
+![](./figures/differentiability.jpg)
+
+`r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`: Differentiability
+
+As a result, the graph of a differentiable function must have a (non-vertical) tangent line at each point in its domain, be relatively smooth, and cannot contain any breaks, bends, or cusps. See `r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")` for reference.
+
+Next, gradient descent is guaranteed to find a global minimum..that is for certain types of objective functions.  Consider the following objective functions graphed below.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Now, we consider the same question for a differentiable function $f(x)=x^2$.
 
-```{python univariate, results='hide', code=readLines('./src/univariate.py')}
+```{python univariate, results='hide', code=readLines('./code/univariate.py')}
 ```
 `r kfigr::figr(label = "univariate", prefix = TRUE, link = TRUE, type="Figure")`: Univariate Differentiable Function $f(x)=x^2$
 
@@ -99,7 +173,7 @@ More formally, a function is said to be differentiable at $x_0$ if the following
 $$\displaystyle{\lim_{h \to0}}\Big[\frac{f(x_0+h)-f(x_0)}{h}\Big].$$
 This limit is called the derivative of $f(x_0)$, denoted as $f^\prime(x_0)$. 
 
-```{python derivative, results='hide', code=readLines('./src/derivative.py')}
+```{python derivative, results='hide', code=readLines('./code/derivative.py')}
 ```
 `r kfigr::figr(label = "derivative", prefix = TRUE, link = TRUE, type="Figure")`: Derivative of a Univariate Differentiable Function
 
@@ -216,7 +290,7 @@ With that, let's extend the concept of the derivative to the multivariable setti
 The partial derivative of a multivariable function tells you how much the function changes as you tweak just one of the variables in its input. In other words, it is the rate at which the output of $f$ changes as we nudge just one of the input variables slightly.
 
 ##### Visualizing the Partial Derivative
-```{python partial, code=readLines('../src/example/partial.py')}
+```{python partial, code=readLines('./code/partial.py')}
 ```
 
 To graphically illustrate, let $f(x,y) = x^2+xy-y^2$ and consider the task of finding the partial derivative of $f(x,y)$ with respect to $x$ and $y$ at a $f(-2,-2)$. We can visualize the surface plot for the equation as follows. 

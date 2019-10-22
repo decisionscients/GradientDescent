@@ -10,6 +10,7 @@ __pycache__/
 content/*.html
 figures/*.gif
 /figures
+*.html
 
 # Filter bibliography files
 content/*.bib
