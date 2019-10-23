@@ -60,7 +60,7 @@ data = convex_points
 # ---------------------------------------------------------------------------- #
 # Figure and plot
 fig = go.Figure(data=data, layout=layout)
-py.plot(fig, filename = "convex.html", auto_open=False)
+py.plot(fig, filename = "./content/figures/convex.html", auto_open=False)
 #%%
 # ---------------------------------------------------------------------------- #
 #                                 CONVEX                                       #
@@ -124,6 +124,5 @@ data = nonconvex_points
 # ---------------------------------------------------------------------------- #
 # Figure and plot
 fig = go.Figure(data=data, layout=layout)
-fig.show()
-py.plot(fig, filename = "nonconvex.html", auto_open=False)
+py.plot(fig, filename = "./content/figures/nonconvex.html", auto_open=False)
 #%%
