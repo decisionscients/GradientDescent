@@ -30,8 +30,7 @@ As shown in the top row of `r kfigr::figr(label = "differentiability", prefix = 
 There are extensions of gradient descent that relax the differentiability assumption, but those are a subject of another post.
 
 ## Minimize Univariate Differentiable Function
-
-So, how do we minimize a univariate differentiable function? Let's first suppose that $n=1$, so that $f : \mathbb{R} \to \mathbb{R}$ is a univariate real-valued function as shown in `r kfigr::figr(label = "convex", prefix = TRUE, link = TRUE, type="Figure")`.
+Let's start with a relatively simple function - the univariate differentiable function. How do we minimize this thing? Let's first suppose that $n=1$, so that $f : \mathbb{R} \to \mathbb{R}$ is a univariate real-valued function as shown in `r kfigr::figr(label = "convex", prefix = TRUE, link = TRUE, type="Figure")`.
 
 ```{python convex_univariate, results='hide', code=readLines('../content/code/univariate.py')}
 ```
@@ -122,7 +121,7 @@ So, we've examined univariate and multivariate linear differentiable functions. 
 
 This may sound glib, especially given the crazy forms differentiable functions can take. But calculus... uhh...uhh... finds a way! It turns out that any function differentiable at a point can be locally approximated at that point by a linear function. Once we have a local linear approximation of our function, we can use properties of differentiation to optimize the true function $f$. 
 
-## Linear Approximation of Univariate Differentiable Function
+### Linear Approximation of Univariate Differentiable Function
 The best local linear approximation of a univariate differentiable function at a point is the tangent line at that point. To show this, we'll: 
 
 * formally define the notion of the derivative,      
@@ -145,7 +144,7 @@ What do we notice? First, the secant changes direction as $Q$ approaches point $
 $$m=\frac{\Delta y}{\Delta x}=\frac{f(x_0+\Delta x)-f(x_0)}{\Delta x}$$
 Hence small values of $\Delta x$ that approach zero render secant lines that are increasingly better approximations of the tangent line to $f(x)$ at $x_0$. Since the limiting position as $\Delta x \to 0$ of the secant line is the tangent line, the difference quotient as $\Delta x \to 0$, if it exists, will be the slope of the tangent line at ($x_0, f(x_0)$). This limit is defined as the *derivative* of the function $f$ at $x_0$:
 $$f^\prime(x_0)=\lim_{\Delta x\to0}\frac{f(x_0+\Delta x)-f(x_0)}{\Delta x}$$
-#### Tangent Line Equation
+### Tangent Line Equation
 Now that we've specified the derivative, we can derive the equation for the tangent line. The difference quotient is
 $$m=\frac{\Delta y}{\Delta x}=\frac{y-y_0}{x-x_0}=\frac{f(x_0+\Delta x)-f(x_0)}{(x_0+\Delta x)-x_0}=\frac{f(x_0+\Delta x)-f(x_0)}{\Delta x},$$
 where $\Delta x=(x-x_0)$.
@@ -154,7 +153,7 @@ Using derivatives, we've shown that the slope $m$ approaches the slope of the ta
 $$y=f(x_0)+f^\prime(x_0)(x-x_0).$$
 So, what is the interpretation of the tangent line?  How does it help us to minimize differentiable functions?
 
-#### The Interpretation of the Tangent Line
+### The Interpretation of the Tangent Line
 Recall that calculus promises that, for a function $f(x_0)$ and a point suitably close to $x_0$, one can pretend that the true function $f$ is just a linear function at $f(x_0)$. This leads us to the most salient interpretation of the tangent line, and it is this.
 
 > The tangent line of a univariate, differentiable function $f$ at point $x_0$ is the best local linear approximation of $f$ at $x_0$. 
@@ -165,7 +164,7 @@ In fact, the tangent is the *unique* linear function that has the same function 
 
 So, now that we have a definition of the derivative, let's review techniques for computing derivatives.
 
-#### Differentiation
+### Differentiation
 Differentiation is the process of finding the derivative of a differentiable function. There are two approaches to differentiation. One approach is to use the geometric definition, but this can be quite a slow and cumbersome process. Fortunately, we have a small number of rules that enable us to differentiate large classes of functions quickly.
 
 For the following exhibit, let, $u=x^2$, $v=4x^3$, and $y=u^9$
@@ -206,10 +205,10 @@ As we've seen the rules of differentiation can allow us to find the derivatives 
 
 Ok, we've adequately covered differentiability and differentation. Let's move onto the multivariate calculus ideas behind the gradient. 
 
-### Multivariate Calculus Revisited
+## Multivariate Calculus Revisited
 So far, we have been dealing with single variable functions such as $f(x)=x^2: \mathbb{R}\to\mathbb{R}$. These functions take a single variable as input and produce a single real number as output. Multivariate calculus extends the concepts of differentiation to functions with multiple variables. Here, we will develop the notions of the partial and directional derivatives, the underpinning concepts behind the gradient.  
 
-#### Multivariate Functions
+### Multivariate Functions
 In general, there are two types of multivariate functions: scalar-valued functions and vector-valued functions. 
 
 #### Scalar-Valued Functions
@@ -248,10 +247,10 @@ which can be written as $f: \mathbb{R^2}\to\mathbb{R^2}$. Again, multiple variab
 
 With that, let's extend the concept of the derivative to the multivariable setting, starting with the partial derivative.
 
-#### Partial Derivative
+### Partial Derivative
 The partial derivative of a multivariable function tells you how much the function changes as you tweak just one of the variables in its input. In other words, it is the rate at which the output of $f$ changes as we nudge just one of the input variables slightly.
 
-##### Visualizing the Partial Derivative
+#### Visualizing the Partial Derivative
 ```{python partial, code=readLines('../content/code/partial.py')}
 ```
 
@@ -281,7 +280,7 @@ The red tangent line in `r kfigr::figr(label = "partial_y", prefix = TRUE, link 
 
 Now that we have a graphical intuition, let's review how the partial derivative of a multivariable function is computed.
 
-##### Computing the Partial Derivative
+#### Computing the Partial Derivative
 Consider our function:
 $$f(x,y) = x^2+xy-y^2$$
 How would we evaluate $\frac{\partial{f}}{\partial{x}}$, the partial derivative with respect to $x$ at input $(-2, -2)$? 
@@ -301,7 +300,7 @@ $$\frac{\partial}{\partial{x}}f(x,y)=\frac{\partial}{\partial{x}}x^2+xy-y^2=2x+y
 Treating $x$ as a constant, we can compute $\frac{\partial{f}}{\partial{y}}$, the partial derivative with respect to $y$ as:
 $$\frac{\partial}{\partial{y}}f(x,y)=\frac{\partial}{\partial{y}}x^2+xy-y^2=x-2y.$$
 
-#### The Gradient
+### The Gradient
 Now that we've explored *partial* derivatives of multivariable functions, you may be wondering what *full* derivative of such as function is.  For **scalar-valued multivariable functions**, the answer is the gradient.
 
 The gradient is the vector-valued, multivariable generalization of the derivative [@gradient]. The gradient of a scalar-valued multivariable function $f(x,y,...)$, denoted as $\nabla{f}$, packages all if its partial derivative information into a vector, e.g.:
@@ -314,7 +313,7 @@ $$
 \end{bmatrix}
 $$
 
-##### Gradient Example in Two Dimensions
+#### Gradient Example in Two Dimensions
 For example, let $f(x,y)=x^2+xy$, then the gradient is defined as:
 $$
 \nabla{f} = 
@@ -328,7 +327,7 @@ $$
 x \\
 \end{bmatrix}
 $$
-##### Gradient Example in Three Dimensions
+#### Gradient Example in Three Dimensions
 In this example, let $f(x,y,z)=x-xy+z^2$, then the gradient at $f(3,3,3)$ is:
 $$
 \nabla{f} = 
@@ -351,7 +350,7 @@ $$
 \end{bmatrix}
 $$
 
-##### Interpreting the Gradient
+#### Interpreting the Gradient
 The most germain interpretation of the gradient to optimization is that the gradient of a function $f$ is a vector that points in the direction of the **steepest ascent** of $f$ at a point.
 
 To prove this, we need to develop the **directional derivative**. The directional derivative is a generalization of the partial derivative that measures rates of change of a function in any arbitrary direction. First, we specify directions as unit vectors whose lengths equal 1. Let $\mathbb{u}$ be such a unit vector, $\|\mathbb{u}\|=1$. Then, lets define the *directional derivative* of $f$ in the direction of $\mathbb{u}$ as being the limit:
