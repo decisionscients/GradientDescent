@@ -78,8 +78,6 @@ fig = go.Figure(
                                         args=[None])])]),
     frames=[go.Frame(
         data=[curve,
-            point_x0,
-            point_P,
             go.Scatter(
                 x=[x_Q[k]],
                 y=[y_Q[k]],
