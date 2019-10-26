@@ -27,7 +27,7 @@ ml_studio <- import('ml_studio')
 
 
 
-```{r knitr_init, echo=FALSE, cache=FALSE, warning=FALSE, message=FALSE}
+```{r setup, echo=FALSE, cache=FALSE, warning=FALSE, message=FALSE}
 figures <- '/figures/'
 options(knitr.table.format = "html")
 options(max.print=100, scipen=999, width = 800)
@@ -36,12 +36,12 @@ knitr::opts_chunk$set(echo=FALSE,
                prompt=FALSE,
 	             eval = TRUE,
                tidy=TRUE,
-               root.dir = "..",
                fig.height = 8,
                fig.width = 20,
                comment=NA,
                message=FALSE,
                warning=FALSE)
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 knitr::opts_knit$set(width=100, figr.prefix = T, figr.link = T)
 knitr::opts_chunk$set(fig.path = figures)
 knitr::knit_hooks$set(inline = function(x) {
@@ -59,11 +59,12 @@ home = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 sys.path.append(home)
 ```
 
-```{r child = '30_intuition.Rmd'}
+```{python imports}
+import numpy as np
 ```
 
-
-
+```{r child = '30_intuition.Rmd'}
+```
 
 
 # References

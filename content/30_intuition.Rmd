@@ -29,151 +29,110 @@ As shown in the top row of `r kfigr::figr(label = "differentiability", prefix = 
 
 There are extensions of gradient descent that relax the differentiability assumption, but those are a subject of another post.
 
-> How to minimize a univariate differentiable function?
+## Minimize Univariate Differentiable Function
 
-Let's first suppose that $n=1$, so that $f : \mathbb{R} \to \mathbb{R}$ is a univariate real-valued function as shown in `r kfigr::figr(label = "convex", prefix = TRUE, link = TRUE, type="Figure")`.
+So, how do we minimize a univariate differentiable function? Let's first suppose that $n=1$, so that $f : \mathbb{R} \to \mathbb{R}$ is a univariate real-valued function as shown in `r kfigr::figr(label = "convex", prefix = TRUE, link = TRUE, type="Figure")`.
 
-```{python convex_univariate, results='hide', code=readLines('./code/univariate.py')}
+```{python convex_univariate, results='hide', code=readLines('../content/code/univariate.py')}
 ```
 ```{r convex_univariate_r, echo=FALSE}
-htmltools::includeHTML("convex.html")
+htmltools::includeHTML("./content/figures/convex.html")
 ```
 `r kfigr::figr(label = "convex_univariate", prefix = TRUE, link = TRUE, type="Figure")`: Convex univariate objective function
 
 So, how would we minimize $f(x)$? Well, if we were at point $x0$ on `r kfigr::figr(label = "convex_univariate", prefix = TRUE, link = TRUE, type="Figure")`, we observe that the graph is increasing to the left and decreasing to the right, so we move to the right. Starting at $x1$, we move to the left to make $f$ as small as possible. In either case, we eventually arrive at the bottom of the basin, which happens to be the *global* minimum for $f$. 
 
-To be more precise, the basic algorithm for minimizing a univariate ($n=1$) differentiable function uses the derivative, $f^\prime(x)$, to determine in which direction to move, and is given by:
+To be more precise, the basic algorithm for minimizing a univariate ($f(x)\in\mathbb{R}$) differentiable function uses the derivative, $f^\prime(x)$, to determine the direction to move, and is given by:
 
 1. while $f^\prime(x)\ne0$
 
-  (a) if $f^\prime(x)>0$, $f$ is increasing, move a $x$ a little to the left;
-  (b) if $f^\prime(x)<0$, $f$ is decreasing, move a $x$ a little to the left;
+  a. if $f^\prime(x)>0$, $f$ is increasing, move a $x$ a little to the left;
+  b. if $f^\prime(x)<0$, $f$ is decreasing, move a $x$ a little to the left;
 
-For our 
+Not all objective functions are as agreeable as the function in `r kfigr::figr(label = "convex_univariate", prefix = TRUE, link = TRUE, type="Figure")`. Consider `r kfigr::figr(label = "nonconvex_univariate", prefix = TRUE, link = TRUE, type="Figure")`. If we start at $x0$, we end up in the left basin, which happens to be the global minimum; however, If we start at $x1$, we eventually arrive at a sub-optimal *local* minimum. 
+```{r nonconvex_univariate_r, echo=FALSE}
+htmltools::includeHTML("./content/figures/nonconvex.html")
+```
+`r kfigr::figr(label = "nonconvex_univariate", prefix = TRUE, link = TRUE, type="Figure")`: Non-convex univariate objective function
 
+The takeaway? Gradient descent is guaranteed to converge to a global minimum with convex objective functions. Since non-convex functions have multiple minima, there is no guarantee that gradient descent will converge to the global minimum. 
 
-
-
-
-
-
-
-
-
-
-
-
-So, how do we minimize $f(x)$? Let's start with the rather trivial task of minimizing a linear function. 
-
-> How do we minimize a linear function?
-
-Consider the linear function of the form:
-$$f(x)=c^Tx+b$$
-where     
+## Minimize Multivariate Linear Function
+Ok, we've derived the basic gradient descent algorithm for the univariate case ($n=1$). Let's now consider the linear function of the form:
+$$f(x)=a^Tx+b$$
+where:     
 
 * $x \in \mathbb{R}^n$ is an $n$-vector,    
-* $c \in \mathbb{R}^n$ is an $n$-vector, and   
-* $b \in \mathbb{R}$ is a scalar.
+* $a \in \mathbb{R}^n$ is an $n$-vector, 
+* $b \in \mathbb{R}$ is a scalar,      
+* $n>1$     
 
-Suppose you are currently at a point $x\in\mathbb{R}^n$, and you wish to find the minimum of the function. You are allowed to move in any direction you like, but you may move at most one unit of Euclidean distance. In which direction should you move to decrease the function $f$ as much as possible, and how much will the function decrease? 
+If $n>1$, our optimization challenge just got complicated because we have an infinite number of directions in which to move, not just two as was the case with the univariate function.
 
-To answer these questions, let $u\in\mathbb{R}^n$ be a unit vector. Moving from $x$ one unit of distance in the direction of $u$ changes our objective function as follows:
+Let's do a little experiment. The animation in `r kfigr::figr(label = "linear_search", prefix = TRUE, link = TRUE, type="Figure")` displays the surface for $f(x)=a^Tx + b$, where:    
+
+
+$$a=\begin{bmatrix}-5\\-3\end{bmatrix},x=\begin{bmatrix}0\\0\end{bmatrix},\text{and}\: b=4$$ 
+
+```{r linear_search_r, echo=FALSE}
+htmltools::includeHTML("./content/figures/linear_search.html")
+```
+`r kfigr::figr(label = "linear_search", prefix = TRUE, link = TRUE, type="Figure")`: Minimizing a multivariate function $f(x)\in\mathbb{R}^2$
+
+We are currently at  $x^T=[0,0]$ and you wish to take a step of one unit of Euclidean distance in the direction that minimizes $f(x)$ the most. Adjust the slider to select a direction in degrees for a unit vector $\vec{u}$ and observe the value of $f(\vec{x}+\vec{u})$. Which direction minimizes $f(x)$ the most? When you find it, note the coordinates of $\vec{u}$.
+
+We can solve for $\vec{u}$ that minimizes $f(x)$ the most by using a bit of linear algebra. Note that moving from $x$ one unit of distance in the direction of $u$ changes our objective function as follows:
 
 $$
 \begin{align}
-c^Tx + b & \to c^T(x+u)+b \\
-& = c^Tx + b+c^Tu \\
-& = c^Tx + b + \|c\|_2\space\|u\|_2\space \text{cos}\space\theta
+a^Tx + b & \to a^T(x+u)+b \\
+& = a^Tx + b+a^Tu \\
+& = a^Tx + b + \|a\|_2\space\|u\|_2\space \text{cos}\space\theta
 \end{align}
 $$
-where $\theta$ denotes the angle between the vectors $c$ and $u$. In order to decrease $f$ as much as possible, we must make $\text{cos}\space\theta$ as small as possible (i.e.-1). We do this by choosing $u$ to point in the opposite direction of $c$, such that $u=\frac{-c}{\|c\|_2}$. 
-Therefore, the main take-away is this.  We minimize $f$ the most by moving in the direction of the **steepest descent**, $-c$, for a rate of decrease $\|c\|_2$ [@Roughgarden2018].
+where $\theta$ denotes the angle between the vectors $a$ and $u$. To minimize the function, we must make $\text{cos}\space\theta$ as small as possible (i.e.-1). We do this by choosing $u$ to point in the opposite direction of $a$, the direction of steepest ascent, such that $u=\frac{-a}{\|a\|}$. 
 
-
-In order to understand how gradient descent does its magic, let's start with a univariate differentiable function.  
-> How does one minimize a univariate differentiable linear function?
-
-First, let's define our terms. A differentiable function of one real variable is a function whose derivative exists at each point in its domain. That means that a non-vertical tangent line exists for at each point in the function's domain.
-
-![](./figures/differentiability.jpg)
-
-`r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`: Differentiability
-
-As a result, the graph of a differentiable function must have a (non-vertical) tangent line at each point in its domain, be relatively smooth, and cannot contain any breaks, bends, or cusps. See `r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")` for reference.
-
-Next, gradient descent is guaranteed to find a global minimum..that is for certain types of objective functions.  Consider the following objective functions graphed below.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Now, we consider the same question for a differentiable function $f(x)=x^2$.
-
-```{python univariate, results='hide', code=readLines('./code/univariate.py')}
+Let's solve for $u$ analytical, then compare it to our experimental result above. The formula for computing $\vec{u}$ in the opposite direction of $\vec{a}$ is given by:
+$$\vec{u}=-\frac{1}{||\vec{a}||}\vec{a}$$
+Let's solve for $\vec{u}$.
+```{python u, eval=T, echo=T}
+a = np.array([-5,-3])
+u = np.round(-a / (a**2).sum()**0.5,4)
 ```
-`r kfigr::figr(label = "univariate", prefix = TRUE, link = TRUE, type="Figure")`: Univariate Differentiable Function $f(x)=x^2$
 
-Our goal is to move from point $A$ to the minimum at point $B$, so how do we do that.
+Now, we can solve for $f(\vec{x}+\vec{u})$ as follows:
+```{python f_u, eval=T, echo=T}
+b = 4
+x = np.array([0,0])
+def f(x, a, b):
+    return np.dot(a.T, x) + b
+z = np.round(f(x+u, a, b), 4)
+```
+
+The unit vector $\vec{u}$ that minimizes $f(x)$ the most is `r [py$u[0], py$u[1]]` and the minimum value at $f(\vec{x}+\vec{u})$ is `r py$z`.  How close did you get?  Turns out the optimum direction is about 31 degrees. 
+
+So, the main takeway is this. For linear functions, we minimize $f$ the most by moving in the direction of the **steepest descent**, $-a$ [@Roughgarden2018].
+
+## Minimize General Differentiable Function
+So, we've examined univariate and multivariate linear differentiable functions. How do we minimize *general* differentiable functions, ya know, the ones we actually care about.
 
 > The key to minimizing any differentiable function, is to reduce it to a linear function.
 
-This may sound glib, especially given the crazy forms differentiable functions can take. But calculus promises that, for a point suitably close to $a$, one can pretend that the true function $f$ is just a linear function at $f(a)$. Once we have expressed our optimization problem in terms of a linear function, we can use properties of differentiation to optimize the true function $f$. 
+This may sound glib, especially given the crazy forms differentiable functions can take. But calculus... uhh...uhh... finds a way! It turns out that any function differentiable at a point can be locally approximated at that point by a linear function. Once we have a local linear approximation of our function, we can use properties of differentiation to optimize the true function $f$. 
 
-To see this, we'll need to review some calculus and clarify what it means for a function to be differentiable.
+## Linear Approximation of Univariate Differentiable Function
+The best local linear approximation of a univariate differentiable function at a point is the tangent line at that point. To show this, we'll: 
 
-## Calculus Revisited
-Here, we explore the essential ideas from univariate calculus - calculus involving equations with a single variable. We'll start by:      
+* formally define the notion of the derivative,      
+* review the process of differentiation,    
+* interpret the tangent line as the best local linear approximation of a univariate differentiable function   
 
-* clarifying what we mean by 'differentiable' function,      
-* formally defining the notion of the derivative,      
-* interpreting the tangent line as the best local linear approximation of a univariate differentiable function.
-* reviewing the process of differentiation 
-
-Once we've covered the univariate concepts, we'll move on to the multivariate ideas surrounding the gradient. We'll address questions such as:     
-
-* How is the gradient formally defined?      
-* Why is the gradient the direction of steepest ascent?     
-* How do we compute the gradient?     
-
-### Univariate Calculus Revisited
-
-#### Differentiable Functions
-According to our wikipedia friends, "a differentiable function of one real variable is a function whose derivative exists at each point in its domain. As a result, the graph of a differentiable function must have a (non-vertical) tangent line at each point in its domain, be relatively smooth, and cannot contain any breaks, bends, or cusps " [@wiki:Differentiable].
-
-![](./figures/differentiability.jpg)
-
-`r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`: Differentiability
-
-Consider the functions $f : (a,b) \to \mathbb{R}$ and $a<x_0<b$ as depicted in `r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`. Each of the functions on the top row meet the following criteria:     
-
-1. They are continuous over $f : (a,b) \to \mathbb{R}$.          
-2. They are smooth over $f : (a,b) \to \mathbb{R}$.    
-3. The functions have no vertical tangent lines over their domains.
-
-The functions on the bottom row are not differentiable as they fail to meet the criteria above.  
-
-The formal definition of differentiability involves the notion of the **derivative**.
-
-#### The Derivative
-More formally, a function is said to be differentiable at $x_0$ if the following limit exists:
+### The Derivative
+A function $f$ is said to be differentiable at $x_0$ if the following limit exists:
 $$\displaystyle{\lim_{h \to0}}\Big[\frac{f(x_0+h)-f(x_0)}{h}\Big].$$
 This limit is called the derivative of $f(x_0)$, denoted as $f^\prime(x_0)$. 
 
-```{python derivative, results='hide', code=readLines('./code/derivative.py')}
+```{python derivative, results='hide', code=readLines('../content/code/derivative.py')}
 ```
 `r kfigr::figr(label = "derivative", prefix = TRUE, link = TRUE, type="Figure")`: Derivative of a Univariate Differentiable Function
 
@@ -290,7 +249,7 @@ With that, let's extend the concept of the derivative to the multivariable setti
 The partial derivative of a multivariable function tells you how much the function changes as you tweak just one of the variables in its input. In other words, it is the rate at which the output of $f$ changes as we nudge just one of the input variables slightly.
 
 ##### Visualizing the Partial Derivative
-```{python partial, code=readLines('./code/partial.py')}
+```{python partial, code=readLines('../content/code/partial.py')}
 ```
 
 To graphically illustrate, let $f(x,y) = x^2+xy-y^2$ and consider the task of finding the partial derivative of $f(x,y)$ with respect to $x$ and $y$ at a $f(-2,-2)$. We can visualize the surface plot for the equation as follows. 

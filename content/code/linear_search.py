@@ -1,48 +1,48 @@
 # ============================================================================ #
-#                                 PLANAR                                       #
+#                           LINEAR SEARCH                                      #
 # ============================================================================ #
-# Renders t
+# Interactive plot showing linear function optimization with one step
 #%%
 import plotly.offline as po
 import plotly.graph_objs as go
 import numpy as np
-from ipywidgets import interactive, HBox, VBox, widgets
 po.init_notebook_mode()
+
+#%%
 # ---------------------------------------------------------------------------- #
 # Formula
-def f(x0,x1):
-    x = np.array((x0,x1))    
-    theta = np.array([-5,-3])
-    b = 4
-    return np.dot(x.T, theta) + b
+theta = np.array([-5,-3])
+b = 4
+def f(X, theta=theta, b=b):
+    return np.dot(X.T, theta) + b
 # ---------------------------------------------------------------------------- #
 #%%
 # Compute vector given point, length and angle
-def vector(x, y, angle, length=1):
+def vector(x, angle, length=1):
     angle = angle * np.pi / 180
-    return [length*np.cos(angle)+x, length*np.sin(angle)+y]
-x_start=0
-y_start=0    
-z_start = f(x_start, y_start)
+    return np.array([length*np.cos(angle)+x[0], length*np.sin(angle)+x[1]])
+x=np.array([0,0])
+z_start = f(x)
 
-#%%
 # ---------------------------------------------------------------------------- #
 #%%
 # Get data
 x0 = np.linspace(0, 2, 10)
 x1 = np.linspace(0, 2, 10)
 X0, X1 = np.meshgrid(x0, x1)
-Z = f(X0,X1)
+X = np.array((X0,X1))
+Z = f(X)
 # ---------------------------------------------------------------------------- #
 #%%
-# Compute antipated solution
-theta = np.array([-5,-3])
-theta_prime = -theta / (theta**2).sum()**0.5 # Compute unit vector
-cost_prime = f(theta_prime[0], theta_prime[1])
+# Create unit vector in opposite direction of theta 
+u = -theta / (theta**2).sum()**0.5 
+# Compute the value of the function at (x+u)
+z = f(x+u)
 # Compute empirical solution
 angles = np.linspace(0,90,90)
-theta_hats = [vector(x_start, y_start, angle) for angle in angles]
+theta_hats = [vector(x, angle) for angle in angles]
 costs = [f(x0,x1) for x0, x1 in theta_hats]
+angle_prime = np.argmin(costs)
 theta_hat = theta_hats[np.argmin(costs)]
 
 # ---------------------------------------------------------------------------- #
@@ -61,18 +61,20 @@ fig.add_trace(
 )
 # Starting point at z=0
 fig.add_trace(
-    go.Scatter3d(x=[x_start], y=[y_start], z=[np.min(Z)],
+    go.Scatter3d(x=[x[0]], y=[x[1]], z=[np.min(Z)],
         mode='markers+text',
         name='Start Point',        
         marker=dict(
             size=4,
             color='blue'
-            )
-        )
+            ),
+        text=r'x',
+        textposition='top center',
+        )        
 )
 # Starting point at z != 0
 fig.add_trace(
-    go.Scatter3d(x=[x_start], y=[y_start], z=[f(x_start, y_start)],
+    go.Scatter3d(x=[x[0]], y=[x[1]], z=[f(x)],
         mode='markers+text',
         name='Start Point',
         marker=dict(
@@ -92,83 +94,68 @@ fig.add_trace(
         text=[]
         )
 )
-
-# Text theoretical solution
-text = r'$\\theta^\\prime = ' + str(theta_prime)
-fig.add_trace(
-    go.Scatter(
-        x=[2], 
-        y=[8], 
-        mode='text',        
-        name='Theta Prime',
-        text=[text]
-        )
-)
-
-# Text theoretical costs
-text = 'cost: ' + str(cost_prime)
-fig.add_trace(
-    go.Scatter(
-        x=[5], 
-        y=[8], 
-        mode='text',        
-        name='Costs Prime',
-        text=[text]
-        )
-)
 # ---------------------------------------------------------------------------- #
 #%%
 # Add iterative traces
 for angle in np.arange(0,90,1):
     # Get new solution
-    v = vector(x_start,y_start,angle)
+    u = vector(x, angle)
     # Compute new vector components 
-    v_x = np.linspace(x_start,v[0],10)
-    v_y = np.linspace(y_start,v[1],10)
-    v_z0 = np.full(len(v_y), np.min(Z)) 
-    v_z1 = np.linspace(z_start,f(v[0], v[1]),10)
+    u_x = np.linspace(x[0],u[0],10)
+    u_y = np.linspace(x[1],u[1],10)
+    u_z0 = np.full(len(u_y), np.min(Z)) 
+    u_z1 = np.linspace(z_start,f(x+u),10)
     # Compute projection line
-    u_x = np.full(50,v[0])
-    u_y = np.full(50,v[1])
-    u_z = np.linspace(np.min(Z),f(v[0], v[1]),50)
+    p_x = np.full(50,u[0])
+    p_y = np.full(50,u[1])
+    p_z = np.linspace(np.min(Z),f(x+u),50)
     # Print current solution
-    text = r'$\\hat{\\theta} = ' + str(v) 
-    fig.add_trace(
-        go.Scatter(
-            x=[2],
-            y=[6],
-            mode='text',        
-            name='Theta Hat',
-            text=[text]
-        )
-    )
-    # Print current costs
-    text = 'cost: ' + str(f(v[0], v[1]))
+    text = r'$\vec{{u}} = \text{{{}}}$'.format(str(np.round(u,4)))
     fig.add_trace(
         go.Scatter(
             x=[5],
-            y=[6],
+            y=[9],
             mode='text',        
             name='Theta Hat',
-            text=[text]
+            text=[text],
+            visible=False,
+            textposition="top center",
+            textfont=dict(
+                size=18
+            )
+        )
+    )
+    # Print current costs
+    text = r'$f(\vec{{x}}+\vec{{u}}) = \text{{{}}}$'.format(str(np.round(f(x+u), 4)))    
+    fig.add_trace(
+        go.Scatter(
+            x=[5],
+            y=[8.3],
+            mode='text',        
+            name='Cost',
+            text=[text],
+            visible=False,
+            textposition="top center",
+            textfont=dict(
+                size=18
+            )            
         )
     )    
     # Add new point (z=0) trace
     fig.add_trace(
-        go.Scatter3d(x=[v[0]], y=[v[1]], z=[v_z0[0]],
+        go.Scatter3d(x=[u[0]], y=[u[1]], z=[u_z0[0]],
             mode='markers+text',
             name = 'New Point',
             visible=False,
             marker=dict(
                 size=4,
                 color='red'
-            ),
-            text='B',
-            textposition='top center')
+            )
+        )
     )
     # Add new point trace
     fig.add_trace(
-        go.Scatter3d(x=[v[0]], y=[v[1]], z=[v_z1[0]],
+        go.Scatter3d(x=[u[0]], y=[u[1]], z=[u_z1[-1]],
             mode='markers+text',
             name = 'New Point',
             visible=False,
@@ -182,7 +169,7 @@ for angle in np.arange(0,90,1):
     )
     # Add new path (z=0)
     fig.add_trace(
-        go.Scatter3d(x=v_x, y=v_y, z=v_z0,
+        go.Scatter3d(x=u_x, y=u_y, z=u_z0,
             mode='lines',
             name = 'New Path (z=0)',
             visible=False,
@@ -194,7 +181,7 @@ for angle in np.arange(0,90,1):
     )
     # Add new path 
     fig.add_trace(
-        go.Scatter3d(x=v_x, y=v_y, z=v_z1,
+        go.Scatter3d(x=u_x, y=u_y, z=u_z1,
             mode='lines',
             name = 'New Path (z=0)',
             visible=False,
@@ -203,10 +190,20 @@ for angle in np.arange(0,90,1):
                 color='blue'
             )
         )
-    )                                                      
+    )          
+    # Annotate path with unit vector symbol  
+    fig.add_trace(
+        go.Scatter3d(x=[u_x[5]], y=[u_y[5]], z=[u_z0[5]],
+            mode='text',
+            name = 'Unit Vector',
+            visible=False,
+            text=r'u',
+            textposition='top center'
+        )
+    )                                            
     # Add projection line 
     fig.add_trace(
-        go.Scatter3d(x=u_x, y=u_y, z=u_z,
+        go.Scatter3d(x=p_x, y=p_y, z=p_z,
             mode='lines',
             name = 'Projection Line',
             visible=False,
@@ -221,27 +218,27 @@ for angle in np.arange(0,90,1):
 # Set visibility for all steps
 steps = []
 num_angles = 90
-num_traces_update = 5
+num_traces_update = 7
 for i in range(num_angles):
     # Hide all traces
     step = dict(
         method = 'restyle',
-        args = ['visible', [False] * len(fig.data)]
+        args = ['visible', [False] * len(fig.data)],
+        label=str(i)
     )
     # Show static traces (surface, start points)
     step['args'][1][0] = True
     step['args'][1][1] = True
     step['args'][1][2] = True
     step['args'][1][3] = True
-    step['args'][1][4] = True
-    step['args'][1][5] = True
-    step['args'][1][6+(i*num_traces_update)] = True
-    step['args'][1][6+(i*num_traces_update)+1] = True
-    step['args'][1][6+(i*num_traces_update)+2] = True
-    step['args'][1][6+(i*num_traces_update)+3] = True
-    step['args'][1][6+(i*num_traces_update)+4] = True
-    step['args'][1][6+(i*num_traces_update)+5] = True
-    step['args'][1][6+(i*num_traces_update)+6] = True
+    step['args'][1][4+(i*num_traces_update)] = True
+    step['args'][1][4+(i*num_traces_update)+1] = True
+    step['args'][1][4+(i*num_traces_update)+2] = True
+    step['args'][1][4+(i*num_traces_update)+3] = True
+    step['args'][1][4+(i*num_traces_update)+4] = True
+    step['args'][1][4+(i*num_traces_update)+5] = True
+    step['args'][1][4+(i*num_traces_update)+6] = True
+    step['args'][1][4+(i*num_traces_update)+7] = True
     # Add step to steps
     steps.append(step)
 
@@ -251,8 +248,7 @@ for i in range(num_angles):
 sliders = [dict(
   steps=steps,
   currentvalue = dict(
-      prefix='',
-      suffix='-deg'
+      prefix='Direction in Degrees: '
   )
   )]
 # ---------------------------------------------------------------------------- #
@@ -268,17 +264,25 @@ scene = dict(
     xaxis=dict(title='x0'),
     yaxis=dict(title='x1'),
     zaxis=dict(title='z')
+)
+ax = dict(
+  zeroline = False,
+  showline = False,
+  showticklabels = False,
+  showgrid = False    
 )                     
-fig.update_layout(title='Linear Function in 2D', 
+fig.update_layout(title='Surface Plot for Linear Function in 2D', 
                   scene=scene,
                   height=600,
                   width=900,
+                  xaxis=ax,
+                  yaxis=ax,
                   sliders=sliders,
                   showlegend=False,
                   margin=dict(l=0,r=0,t=40,b=0),
                   template='plotly_white'
                 )                     
-po.plot(fig, filename='planar.html', auto_open=True)
+po.plot(fig, filename='./content/figures/linear_search.html',include_mathjax='cdn', auto_open=True)
 
 
 #%%

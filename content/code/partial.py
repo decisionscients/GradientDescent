@@ -12,10 +12,10 @@ from matplotlib import cm
 from matplotlib import animation, rc, rcParams
 from IPython.display import HTML
 
-from code.filemanager import save_gif, save_fig
+from content.code.filemanager import save_gif, save_fig
 
 # ---------------------------------------------------------------------------- #
-directory = "./figures"
+directory = "./content/figures"
 def f(x,y):
     return(x**2 + x*y - y**2)
 

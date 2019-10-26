@@ -30,6 +30,7 @@ convex_points = [go.Scatter(
     mode='markers+text',
     marker=dict(
         size=8,
+        opacity=1,
         color=p['color']
     ),
     text=p['label'],
@@ -93,6 +94,7 @@ nonconvex_points = [go.Scatter(
     y=[nonconvex(p['value'])],
     mode='markers+text',
     marker=dict(
+        opacity=1,
         size=8,
         color=p['color']
     ),
@@ -125,4 +127,4 @@ data = nonconvex_points
 # Figure and plot
 fig = go.Figure(data=data, layout=layout)
 py.plot(fig, filename = "./content/figures/nonconvex.html", auto_open=False)
-#%%
+
