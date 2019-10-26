@@ -82,7 +82,7 @@ ax.set_title(r"$f(x,y) = x^2+xy-y^2$", fontsize=14, color='black')
 filename = "multivariable_function.png"
 save_fig(fig, directory=directory, filename=filename)
 plt.tight_layout()
-plt.show()
+#plt.show()
 #%%
 # ---------------------------------------------------------------------------- #
 #                        Partial Derivative w.r.t X                            #
@@ -118,7 +118,7 @@ ax.set_title(r"$f(x,y) = x^2+xy-y^2$" + "\n" + "Partial Derivative w.r.t X", fon
 filename = "partial_wrt_x.png"
 save_fig(fig, directory=directory, filename=filename)
 plt.tight_layout()
-plt.show()
+#plt.show()
 #%%
 # ---------------------------------------------------------------------------- #
 #                        Partial Derivative w.r.t y                            #
@@ -154,5 +154,5 @@ ax.set_title(r"$f(x,y) = x^2+xy-y^2$" + "\n" + "Partial Derivative w.r.t Y", fon
 filename = "partial_wrt_y.png"
 save_fig(fig, directory=directory, filename=filename)
 plt.tight_layout()
-plt.show()
+#plt.show()
 #%%

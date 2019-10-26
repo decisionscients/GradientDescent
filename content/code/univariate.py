@@ -20,7 +20,7 @@ y_convex = convex(x_convex)
 # Convex points definitions
 convex_points_list = [
     {'label': 'x0', 'value':-3, 'color':'black'},
-    {'label': 'Global Minimum', 'value': 0, 'color': 'red'},
+    {'label': 'Global Minimum', 'value': 0, 'color': 'green'},
     {'label': 'x1', 'value': 3, 'color':'black'}]
 # ---------------------------------------------------------------------------- #
 # Convex Traces
@@ -43,7 +43,7 @@ t_convex = go.Scatter(x=x_convex, y=y_convex,
                       name='Convex Function',
                       marker=dict(
                           size=2,
-                          color='#2F5168'
+                          color='#1560bd'
                           )
                     )
 
@@ -83,10 +83,10 @@ x_local_min = x_range[np.argmin(nonconvex(x_range))]
 # ---------------------------------------------------------------------------- #
 # Nonconvex points 
 nonconvex_points_list = [
-    {'label': 'Global Minimum', 'value':x_global_min, 'color': 'red'},
+    {'label': 'Global Minimum', 'value':x_global_min, 'color': 'green'},
     {'label': 'x0', 'value':0.1, 'color':'black'},
     {'label': 'x1', 'value': 1, 'color':'black'},
-    {'label': 'Local Minimum', 'value':x_local_min, 'color': 'green'}]
+    {'label': 'Local Minimum', 'value':x_local_min, 'color': 'red'}]
 # ---------------------------------------------------------------------------- #
 # Nonconvex Traces
 nonconvex_points = [go.Scatter(
@@ -108,7 +108,7 @@ t_nonconvex = go.Scatter(x=x_nonconvex, y=y_nonconvex,
                       name='Non-Convex Function',
                       marker=dict(
                           size=2,
-                          color='#2F5168'
+                          color='#1560bd'
                           )
                     )
 
