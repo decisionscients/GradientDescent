@@ -21,7 +21,7 @@ def secant(P,Q):
     # Compute interept
     b = P[1]- m * P[0]
     # Designate x-lim
-    x = np.linspace(P[0]-3,Q[0]+3,50)
+    x = np.linspace(P[0]-1,Q[0]+1,50)
     y = m*x+b
     return x, y
 
@@ -49,7 +49,7 @@ delta_x = 6
 x0 = 3
 y0 = f(x0)
 P = np.array([x0,y0])
-N = 100
+N = 50
 x_Q = np.linspace(x0, x0+delta_x, N)
 y_Q = f(x_Q)
 # ---------------------------------------------------------------------------- #
@@ -58,7 +58,7 @@ y_Q = f(x_Q)
 curve = go.Scatter(x=x, y=y,
             mode="lines",
             visible=True,
-            line=dict(width=2, color="blue"))
+            line=dict(width=2, color="#1560bd"))
 # ---------------------------------------------------------------------------- #
 #%%
 # Point x0            
@@ -79,7 +79,19 @@ point_P = go.Scatter(x=[x0], y=[y0],
             textposition='top center')    
 # ---------------------------------------------------------------------------- #
 #%%
+# Point P projection            
+projection_P = go.Scatter(x=np.full(10,x0), y=np.linspace(0,y0,10), 
+            mode='lines',                  
+            line=dict(dash='dash',color='grey')
+)
+# ---------------------------------------------------------------------------- #
+#%%
 # Create frames
+def texts(t,n):
+    if n != 0:
+        return t
+    else:
+        return ""
 frames = []
 for k in reversed(range(N)):
     frame=go.Frame(
@@ -88,15 +100,51 @@ for k in reversed(range(N)):
                 x=[x_Q[k]],
                 y=[y_Q[k]],
                 mode="markers+text",            
-                marker=dict(color="red", size=10),
+                marker=dict(color="black"),
                 text=r'Q',
                 textposition='top center'),
             go.Scatter(
                 x = secant(P=P,Q=np.array([x_Q[k],y_Q[k]]))[0],
                 y = secant(P=P,Q=np.array([x_Q[k],y_Q[k]]))[1],
                 mode="lines",
-                line=dict(width=2, color="red"))]
-            )
+                line=dict(width=2, color="#f28500")),
+            go.Scatter(
+                x=[x_Q[k]],
+                y=[0],
+                mode='markers+text',
+                name=r'$x0+\Delta x$',        
+                marker=dict(color='black'),
+                text=texts(t=r'$x0+\Delta x$',n=k),
+                textposition='bottom center'),
+            go.Scatter(
+                x=np.full(10,[x_Q[k]]),
+                y=np.linspace(0,y_Q[k],10),
+                mode='lines',                  
+                line=dict(dash='dash',color='grey')
+            ),
+            go.Scatter(
+                x=np.linspace(x0,x_Q[k]+1,10),
+                y=np.full(10,y0),
+                mode='lines',                  
+                line=dict(dash='dash',color='grey')
+            ),
+            go.Scatter(
+                x=[x_Q[k]+1],
+                y=[y0+(y_Q[k]-y0)/2],
+                mode='text',
+                name = r"$f(x_0+\Delta x)-f(x_0)$",
+                text=r"$f(x_0+\Delta x)-f(x_0)$",
+                textposition="middle right"
+            ),
+            go.Scatter(
+                x=[x0+(x_Q[k]-x0)/2],
+                y=[y0-1],
+                mode='text',
+                name=r'$\Delta x$',        
+                text=texts(t=r'$\Delta x$',n=k),
+                textposition='bottom center')
+        ]
+        )
     frames.append(frame)
 
 final_frame=go.Frame(
@@ -105,7 +153,7 @@ final_frame=go.Frame(
             x=tangent(x0,y0)[0],
             y=tangent(x0,y0)[1],
             mode="lines",
-            line=dict(width=2, color="red")
+            line=dict(width=2, color="#f28500")
         )
     ]
 )
@@ -114,36 +162,31 @@ frames.append(final_frame)
 # ---------------------------------------------------------------------------- #
 #%%
 # Create figure
+ax = dict(
+  zeroline = False,
+  showline = False,
+  showticklabels = False,
+  showgrid = False    
+) 
 fig = go.Figure(
-    data=[curve, curve, curve, point_x0, point_x0, point_P, point_P],
+    data=[curve, curve, curve, curve, curve, curve, curve, curve,
+          point_x0, point_x0, point_P, 
+          point_P, projection_P],
     layout=go.Layout(
-        xaxis=dict(range=[xm, xM], autorange=False, zeroline=False),
-        yaxis=dict(range=[ym, yM], autorange=False, zeroline=False),
-        title_text="Kinematic Generation of a Planar Curve", hovermode="closest",
+        xaxis=dict(range=[xm, xM], showticklabels=False, autorange=False, zeroline=False),
+        yaxis=dict(range=[ym, yM], showticklabels=False, autorange=False, zeroline=False),
+        title_text="Derivative as a Limit", hovermode="closest",
+        width=1200,
+        height=800,
         showlegend=False,
         template='plotly_white',
         updatemenus=[dict(type="buttons",
                           buttons=[dict(label="Play",
                                         method="animate",
                                         args=[None])])]),
-    frames=[go.Frame(
-        data=[
-            go.Scatter(
-                x=[x_Q[k]],
-                y=[y_Q[k]],
-                mode="markers+text",            
-                marker=dict(color="red", size=10),
-                text=r'Q',
-                textposition='top center'),
-            go.Scatter(
-                x = secant(P=P,Q=np.array([x_Q[k],y_Q[k]]))[0],
-                y = secant(P=P,Q=np.array([x_Q[k],y_Q[k]]))[1],
-                mode="lines",
-                line=dict(width=2, color="red"))])
-        for k in reversed(range(N))]        
-    )
+    frames=frames
+)
 
 
-
-po.plot(fig, filename='./content/figures/kinematic.html',include_mathjax='cdn', auto_open=True)
+po.plot(fig, filename='./content/figures/derivative.html',include_mathjax='cdn', auto_open=True)
 #%%
