@@ -189,5 +189,5 @@ fig = go.Figure(
 )
 
 
-po.plot(fig, filename='./content/figures/derivative.html',include_mathjax='cdn', auto_open=True)
+po.plot(fig, filename='../content/figures/derivative.html',include_mathjax='cdn', auto_open=True)
 #%%

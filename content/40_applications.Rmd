@@ -1,0 +1,153 @@
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+TeX: {
+equationNumbers: {
+autoNumber: "all",
+formatNumber: function (n) {return ''+n}
+}
+}});</script>
+
+# Gradient Descent Applications
+This is section __ of a 6-part series on Gradient Descent. In the prior section, we examined the calculus behind gradient descent. Here, we will apply what we learned to apply gradient descent to regression and classification tasks, namely:    
+
+* Linear Regression    
+* Logistic Regression    
+* Multinomial Classification    
+
+By the close of this section, you should be able to:     
+
+* Destinguish the hypothesis functions for regression and classification settings    
+* Define the cost functions appropriate to regression and classification applications   
+* Derive the gradient of the cost functions with respect to parameters    
+* Describe the gradient descent, regression and classification, update rules
+
+Let's get started.
+
+## Linear Regression using Gradient Descent
+Linear regression, the most widely used of all statistical techniques, is the study of linear, additive relationships between variables. We start with an input vector $x^T=(x_1, x_2, \dots, x_n)$, the *independent* variables, and we want to predict a real-valued output $y$, otherwised called the *dependent* variable. 
+
+### Hypothesis Function
+To render a real-valued prediction, we need a function, a hypothesis function $h_\theta(x):x\to y$, of the form:
+$$h_\theta(x)=\theta_0+\displaystyle\sum_{i=1}^n\theta_ix_i$$
+where:   
+* $\theta_0$ is the bias term     
+* $\theta_i$ is the $i$th coefficient, or parameter    
+* $x_i$ is the $i$th variable in $x$    
+* $n$ is the number of variables or features in $x$    
+
+The central property of this function is that the prediction $y$ is a linear function of each of the $x$ variables, holding the others constant. The parameters $\theta_1, \theta_2, \dots, \theta_n$ scale the individual contributions of the different $x$ variables. The additional constant $\theta_0$, the bias or intercept term, is the prediction that the model would make if all the $x$'s were zero.
+
+To simplify our notation, we can add an intercept term $x_0=1$ to our feature vector $x$. We can now represent our hypothesis in the *vectorized* form:
+$$h_\theta(x)=\displaystyle\sum_{i=0}^n\theta_ix_i=\theta^Tx$$
+### Cost Function
+Having defined our prediction function, our next step is to specify a *cost* function to measure the quality of our predictions. The overall cost of predicting $\hat{y}$ on the training set when the true values are $y$ is given by:
+$$J(\theta)=\frac{1}{2m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2$$
+This **quadratic** function, also known as the least squares cost function, is convex with a single global minimum, well suited for gradient descent optimization.
+
+### Gradient of the Cost Function
+Recall, the gradient, $\nabla J(\theta)$, is a vector-valued function, in which the vector contains the partial derivatives of the cost function with respect to each of the parameters $\theta$. We derive $\nabla J(\theta)$ as follows:
+
+$$
+\begin{equation}
+\begin{split}
+\frac{\partial}{\partial\theta_j}J(\theta)&=\frac{\partial}{\partial \theta_j}\bigg(\frac{1}{2m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2\bigg)\\
+\frac{\partial}{\partial\theta_j}J(\theta)&=\frac{1}{2m}\displaystyle\sum_{i=1}^m\frac{\partial}{\partial \theta_j}(h_\theta(x^{(i)})-y^{(i)})^2\hspace{50mm}\text{derivative of sum is sum of derivative}\\
+\frac{\partial}{\partial\theta_j}&=\frac{1}{2m}\displaystyle\sum_{i=1}^m2(h_\theta(x^{(i)})-y^{(i)})\frac{\partial}{\partial \theta_j}(h_\theta(x^{(i)})-y^{(i)})\hspace{22mm}\text{power+chain rule}\\
+\frac{\partial}{\partial\theta_j}&=\frac{1}{2m}\displaystyle\sum_{i=1}^m2(h_\theta(x^{(i)})-y^{(i)})\frac{\partial}{\partial \theta_j}(\displaystyle\sum_{j=0}^n\theta_j^Tx_j^{(i)}-y^{(i)})\hspace{17mm}\text{substituting}\space \theta^Tx\\
+\nabla J_\theta&=\frac{\partial}{\partial\theta_j}=\frac{1}{m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})x_j^{(i)}\space(\text{for every j})\hspace{19mm}\text{power rule+algebraic simplification}
+\end{split}
+\end{equation}
+$$
+Again, this formulation assumes that we have included an intercept term $x_0=1$
+
+### Gradient Descent Parameter Update Rule
+Now that we have our gradient, we can iteratively apply the least mean squares (LMS) update rule.
+$$
+\theta_j := \theta_j-\alpha\nabla J_\theta
+$$
+The LMS update rule has several properties that seem natural. For instance, we update the parameters $\theta$ by *subtracting* the scaled gradient in order to move in the direction of steepest *descent*. In addition, the magnitude of the update is proportional to the **error** term $h_\theta(x^{(i)})-y^{(i)}$. If we encounter large errors in our training batch, the magnitude of the gradient is higher resulting in a larger change to the parameters $\theta$. On the other hand, if our predictions are close to the true values $y$, our error term is smaller, resulting in smaller changes to the parameters. Lastly, gradient descent can be susceptible to local minima; however, the error manifold for the linear regression cost function is convex and as such, has only a single global minimum.
+
+### Linear Regression Example
+For this example, we will use the Boston Housing Dataset, which contains 506 examples, 14 predictors and a single target variable MEDV - the median value of owner-occupied homes in $1000's. For visualization purposes, we will restrict ourselves to a single predictor RM - the average number of rooms per dwelling.
+```{r boston, echo=FALSE}
+htmltools::includeHTML("./content/figures/boston.html")
+```
+`r kfigr::figr(label = "boston", prefix = TRUE, link = TRUE, type="Figure")`: Boston Housing Prices by Average Number of Rooms
+
+Let's run linear regression with gradient descent for 50 epochs with a learning rate $\alpha=0.05$
+![](../content/figures/linear_regression_search.gif)
+
+`r kfigr::figr(label = "linear_regression_search", prefix = TRUE, link = TRUE, type="Figure")`: Linear Regression Gradient Descent Search Trajectory
+
+The U-shape represents the shape of the quadratic function. On the horizontal axes we have $\theta_0$, the intercept parameter and $\theta_1$, the coefficient for the rooms variable. On the vertical axis, we have the associated costs for the parameters $\theta$. The two lines represent the trajectory taken by gradient descent. Note that the true trajectory lies on the $x-y$ axis and is indicated by the blue line. The red line is added to show the projection of the parameters against the error manifold.
+
+This model produces parameters $\theta_0\approx21.005$ and $\theta_1\approx5.935$. If we plot prices versus rooms, we are able to juxtapose the regression lines associated with the parameters $\theta$ from each iteration.
+
+
+![](../content/figures/linear_regression_fit.gif)
+
+`r kfigr::figr(label = "linear_regression_fit", prefix = TRUE, link = TRUE, type="Figure")`: Linear Regression Fit with Gradient Descent
+
+### Linear Regression Model Representation Summary
+To summarize, the linear regression model representation is:
+$$
+\begin{equation}
+\begin{split}
+\text{Hypothesis Function}\hspace{30mm}&h_\theta(x)=\theta^Tx\\
+\text{Cost Function}\hspace{30mm}&J(\theta)=\frac{1}{2m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2\\
+\text{Gradient}\hspace{30mm}&\nabla{J\theta}=\frac{1}{m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})x_j^{(i)}\space(\text{for every j})
+\end{split}
+\end{equation}
+$$
+
+### Logistic Regression using Gradient Descent
+Logistic regression is a classification algorithm that is used to choose a value $y$ that maximizes $P(Y|X)$, assuming:
+
+* that all training examples are independent and identically distributed random variables,    
+* $Y$ is a single variable that can take one of two values, typically 0 and 1, and      
+* $P(Y|X)$ can be approximated as a sigmoid function applied to a linear combination of input features.    
+
+Furthermore logistic regression assumes:
+$$
+\begin{equation}
+\begin{split}
+P(Y=1|X=x)&=\sigma(\theta^Tx) \hspace{30mm} \text{where}\space x_0=1\\
+P(Y=0|X=x)&=1-\sigma(\theta^Tx)
+\end{split}
+\end{equation}
+$$
+In keeping with our terminology from above, $\sigma(\theta^Tx)$ is our hypothesis function. The sigmoid function, $\sigma(z)$, plotted below, is widely used in engineering and science.
+```{r sigmoid, echo=FALSE}
+htmltools::includeHTML("./content/figures/sigmoid.html")
+```
+`r kfigr::figr(label = "sigmoid", prefix = TRUE, link = TRUE, type="Figure")`: Sigmoid Function
+
+For Logistic Regression, we measure the quality of our predictions in terms of the negative likelihood of all the data (under the Logistic Regression assumption). We take the negative of the likelihood so that we can minimize it during gradient descent. To avoid arithmetic underflow, we take the log of the likelihood equation as follows:
+$$
+J(\theta)=-\frac{1}{m}\displaystyle\sum_{i=0}^my^{(i)}\text{log}\space\sigma(\theta^Tx^{(i)})+(1-y^{(i)})\text{log}[1-\sigma(\theta^Tx^{(i)})]
+$$
+The next step is to calculate the partial derivatives of the log likelihood with respect to each $\theta$. We'll start by defining the derivative of sigma with respect to its inputs:
+$$\frac{\partial}{\partial z}\sigma(z)=\sigma(z)[1-\sigma(z)]$$
+We'll need that later.  The partial derivative of the log likelihood function for a single datapoint (x,y), with respect to each $\theta$ is:
+$$
+\begin{equation}
+\begin{split}
+\frac{\partial J(\theta)}{\partial \theta_j}&=\frac{\partial}{\partial \theta_j}\text{y log}\space\sigma(\theta^Tx)+\frac{\partial}{\partial \theta_j}(1-y)\text{log}[1-\sigma(\theta^Tx)]\hspace{20mm} &\text{derivative of sum of terms}\\
+&=\bigg[\frac{y}{\sigma(\theta^Tx)}-\frac{1-y}{1-\sigma(\theta^Tx)}\bigg]\frac{\partial}{\partial \theta_j}\sigma(\theta^Tx)\hspace{20mm} &\text{derivative of log }f(x)\\
+&=\bigg[\frac{y}{\sigma(\theta^Tx)}-\frac{1-y}{1-\sigma(\theta^Tx)}\bigg]\sigma(\theta^Tx)[1-\sigma(\theta^Tx)]x_j\hspace{20mm} &\text{chain rule + derivative of sigma}\\
+&=\bigg[\frac{y-\sigma(\theta^Tx)}{\sigma(\theta^Tx)[1-\sigma(\theta^Tx)]}\bigg]\sigma(\theta^Tx)[1-\sigma(\theta^Tx)]x_j\hspace{20mm} &\text{algebraic manipulation}\\
+&=[y-\sigma(\theta^Tx)]x_j\hspace{20mm} &\text{cancelling terms}\\
+\end{split}
+\end{equation}
+$$
+Since the derivative of sums is the sum of derivatives, the gradient of $\theta$ is simply the sum of this term for each training datapoint.
+$$\frac{J(\theta)}{\partial\theta_j}=\displaystyle\sum_{i=1}^m[y^{(i)}-\sigma(\theta^Tx^{(i)})]x_j^{(i)}$$
+Now that we've defined the gradient of the log likelihood function, we can employ gradient descent to minimize the *negative* log likelihood in the same way that we used gradient *descent* to minimize the quadratic cost function. The update rule for the parameters $\theta$ is:
+$$
+\begin{split}
+\theta_j&:=\theta_j + \alpha\cdot\frac{\partial J(\theta)}{\partial \theta_j}\\
+&:=\theta_j+\alpha\cdot\displaystyle\sum_{i=0}^m\big[y^{(i)}-\sigma(\theta^Tx)\big]x_j^{(i)}
+\end{split}
+$$
+Where $\alpha$ is the magnitude of the step size we take [@Piech2016].
+
