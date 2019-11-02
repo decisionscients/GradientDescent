@@ -63,7 +63,7 @@ sys.path.append(home)
 import numpy as np
 ```
 
-```{r child = '30_intuition.Rmd'}
+```{r child = '40_applications.Rmd'}
 ```
 
 
