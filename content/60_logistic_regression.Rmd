@@ -1,0 +1,193 @@
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+TeX: {
+equationNumbers: {
+autoNumber: "all",
+formatNumber: function (n) {return ''+n}
+}
+}});</script>
+
+# Logistic Regression with Gradient Descent
+This is section __ of a 6-part series on Gradient Descent. In the prior section, we explored the hypothesis space, cost function, gradient and least squares update rule for linear regression. Here, we will examine the logistic regression framework in terms of its hypothesis space, cost function, maximum likelihood estimation and gradient. By the end of this piece, you will:
+
+* understand the motivation and assumptions behind the logistic regression hypothesis space     
+* be able to derive the cross-entropy (sigmoid) cost function    
+* relate the cost function to maximum likelihood estimation         
+* be able to compute the gradient of cross-entropy cost function  
+
+Logistic Regression is a discriminative, linear model for binary classification.  It models the probability distribution $p(y|x)$ where $y\in \{0,1\}$ is the class label and $x$ is the feature representation. 
+
+## Logistic Regression Assumptions
+Logistic regression is rather different from linear regression, but it does share a two important assumptions:
+
+**1. Observation Independence**: observations are assumed to be independent from each other.       
+**2. Additivity**: The effects of the different independent variables on the expected value of the dependent variable are additive, e.g. little to no multicollinearity.      
+
+In addition, logistic regression assumes:
+**3. Linearity**: The relationships between independent variables and log odds are assumed to be linear.    
+**4. Outcome Structure**: The dependent variable is assumed to be binary, typically $y\in\{0,1\}$     
+**5. Sample Size**: Finally, logistic regression typically requires a large sample size. A general guideline is that one needs a minimum of 10 cases with the least frequent outcome for each independent variable in ones model.
+
+On the other hand, logistic regression does *not* assume:
+
+* a linear relationship between the dependent and independent variables,    
+* normally distributed error terms,    
+* homoscedasticity of error terms vis-a-vis predictions and independent variables      
+* the dependent variable is measured on an interval or ratio scale
+
+## Logistic Regression Hypothesis Space
+The goal of logistic regression is not to predict the output $y\in\{0,1\}$, instead we try to predict $p(y=1|x)$. Once $p(y=1|x)$ is learned, the model will classify a new observation as belonging to class 1 if $p(y=1|x)>t$ and -1 otherwise, where $t$ is a user determined threshold, typically set at $t=0.5$.  
+
+Logistic regression is motivated by the desire to model the posterior probabilities of our binary classes via linear functions in $x$, while ensuring that the probabilities remain in [0,1] and sum to one. However, the hypothesis space we used for linear regression doesn't inherently guarantee $y$ will be a proper probability.
+
+The trick to modeling a hypothesis that is a valid probability and a linear combination of the features $x$ is to model the **log odds** as the linear function:
+$$\text{log }\frac{p}{1-p}=\theta^Tx$$
+where:    
+$$
+\begin{equation}
+\begin{split}
+p&=p(y=1|X=x)&=\sigma(\theta^Tx) \hspace{30mm} \text{where}\space x_0=1\\
+1-p&=p(y=0|X=x)&=1-\sigma(\theta^Tx)
+\end{split}
+\end{equation}
+$$
+
+The log odds is given by the logit function. Thus the model becomes:
+$$\text{logit}(p)=\theta^Tx$$
+Therefore the probability is:
+$$p=\text{logit}^{-1}\big(\theta^TX)$$
+Finally, the sigmoid function is the inverse of the logit function. Thus we can express $p$ as:
+$$
+\begin{align}
+p&=\text{logit}^{-1}\big(\theta^Tx\big)\\
+&=\sigma\big(\theta^Tx)
+\end{align}
+$$
+```{r sigmoid, echo=FALSE}
+htmltools::includeHTML("./content/figures/sigmoid.html")
+```
+`r kfigr::figr(label = "sigmoid", prefix = TRUE, link = TRUE, type="Figure")`: Sigmoid Function
+
+The sigmoid equation is given by:
+$$y=\sigma(z)=\frac{1}{1+e^{-z}}$$
+Hence, our hypothesis space includes functions whose output is [0-1] and have the form:
+$$h(x)=\sigma(\theta^Tx)=\frac{1}{1+e^{-\theta^Tx}},$$
+where:    
+
+* $\sigma$ is the **sigmoid function**      
+* $\theta$ is the vector of learned parameters      
+* $x$ is the input feature representation       
+
+Note, by convention, we include a bias term $x_0=1$ in the feature matrix in order to simplify the linear combination $\theta^Tx$.
+
+The sigmoid has several advantages:     
+
+* it maps a real-valued number to a range [0,1], which is precisely what we require for probability.      
+* the sharp slope near the ends squashes outlier values towards zero or one.      
+* the probabilities $P(y=1)$ and $P(y=0)$ sum to one.
+* it's differentiable, so we can minimize it.     
+
+## Logistic Regression Cost Function
+For binary classification, the typical loss function is binary cross-entropy defined as:
+$H_p(q)=-\frac{1}{M}\displaystyle\sum_{i=1}^My^{(i)}\cdot\text{log }(p(y^{(i)}))+(1-y^{(i)})\cdot\text{log }(1-p(y^{(i)}))$
+where:  
+* $y^{(i)}$ is the label $y^{(i)}\in\{0,1\}$ for the $i^{th}$ training example
+* $p(y^{(i)})$ is the predicted probability that the $i^{th}$ observation belongs to the positive class    
+* $M$ is the number of observations in the training set    
+
+An examination of the function tells us that if $y^{(i)}=1$, we add $\text{log }(p(y^{(i)}))$ to the cross entropy. On the other hand, if  $y^{(i)}=0$, we add $\text{log }(1-p(y^{(i)}))$ to the cross entropy. Finally, we take the negative average of all the cross-entropies to compute our cost.
+
+So, what is entropy? For that matter, what is cross entropy? Why do we take the log of the probabilities? All valid questions. Let's motivate the discussion with an example. 
+
+### Entropy
+Suppose you are the Chief Security Officer at a Tradify, a securities trading website and you must classify each transaction as legitimate ($y=0$) or fraudulent ($y=1$). The dispensation of each transaction must be transmitted to a clearing house but you're stuck with a binary channel through which you can send either a zero or a one. One more thing. Bits are expensive: you're charged $0.10 per bit.
+
+How would you allocate bit sequences to the two classes of transactions?
+
+It turns out that $\text{log}_2(n)$ bits are needed to represent an event that can take one of $n$ values for $n=2^k$. Suppose legitimate and fraudulent transactions were equally likely, the entropy (in bits) of both transactions is equal to $\text{log}_2(2)=1$. If, on the other hand, legitimate transactions ($p\approx 0.9803$) were assumed to be 50 times more likely than fraudulent ($p\approx0.1963$) transactions, and we received one of each, the per-transaction entropies would be:
+$H(fraudulent) = p(fraudulent)\text{log}_2\frac{1}{p(fraudulent)}\approx 0.1113$
+$H(legitimate) = p(legitimate)\text{log}_2\frac{1}{p(legitimate)}\approx0.00656$
+
+The total entropy would be $H\approx0.1393$ If an event is certain, the entropy $H=0$ Mathematically, entropy is the expected number of bits under this optimal encoding:
+$$H(y)=-\displaystyle\sum_{i=1}^My^{(i)}\text{log }y^{(i)}=\displaystyle\sum_{i=1}^My^{(i)}\text{log }y^{(i)}$$
+
+Exploiting the known distribution of $y$ allows us to achieve an optimal number of bits per transaction.
+
+### Cross Entropy
+In contrast to entropy, cross entropy measures the difference between two probability distributions $y$ and $\hat{y}$ over the same underlying set of events or random variables $X$. It is the average number of bits we'll need if we encode symbols from a true disribution $y$ using an estimated (or predicted) distribution $\hat{y}$ In this case, we sum the product of the true distribution $y^{(i)}$ and the encoding $\text{log }\frac{1}{\hat{y^{(i)}}} as follows:
+$$H(y,\hat{y})=-\displaystyle\sum_{i=1}^My^{(i)}\text{ log }\hat{y}^{(i)}=\displaystyle\sum_{i=1}^My^{(i)}\text{ log }\frac{1}{\hat{y}^{(i)}}$$
+Since our true distribution $y$ is true label $y\in\{0,1\}$, we modify the cross entropy function as follows:
+$$H(y,\hat{y})=-\displaystyle\sum_{i=1}^M\bigg[y^{(i)}\text{ log }\hat{y}^{(i)}+(1-y^{(i)})\text{ log }(1-\hat{y}^{(i)})\bigg]$$
+The cost function $J(\theta)$ is the average of the cross-entropies in the training sample and is given by:
+$$J(\theta)=\frac{1}{M}\displaystyle\sum_{i=1}^MH(y^{(i)},\hat{y}^{(i)})=-\frac{1}{M}\displaystyle\sum_{i=1}^M\bigg[y^{(i)}\text{ log }\hat{y}^{(i)}+(1-y^{(i)})\text{ log }(1-\hat{y}^{(i)})\bigg]\label{ref:binary_cost}$$
+### Maximum Likelihood Estimation 
+As with the quadratic (MSE) cost function, we can justify the use of the cross entropy cost function through the maximum likelihood estimation inference framework. 
+
+As with linear regression, we express our likelihood in terms of a probability density function. For binary classification problems, we use the Bernoulli probability density function. (For these equations the subscript will denote the training sample)
+$$p(y|\pi)=\prod_{i=1}^m \pi_i^{y_i}(1-\pi_i)^{1-y_i}$$
+We'll use gradient descent to estimate $\pi$ based upon inputs $x$. Hence, we re-write the likelihood function as:
+$$p(y|x,\theta)=\prod_{i=1}^Mp_\theta(y|x_i)^{y_i}(1-p_\theta(y|x_i))^{1-y_i}$$
+Now, we would like to maximize the above function w.r.t. $\theta$. But for mathematical stability reasons, let's maximize the log-likelihood instead.
+$$
+\mathcal{L}(\theta; x,y)&=\displaystyle\sum_{i=1}^M\bigg[y_i\text{ log }p_\theta(y|x_i) + (1-y_i)\text{ log }(1-p_\theta(y|x_i))\bigg]\label{ref: ll_binary}
+$$
+
+Note that our cost function $J(\theta)$ (Equation: $\ref{binary_cost}$) is the negative of our likelihood function (Equation: $\ref{ll_binary}$). Thus, minimizing $J(\theta)$ is equivalent to maximizing the likelihood $\mathcal{L}(\theta; x,y)$. There is no difference in these objective functions, so there can be no difference between the resulting model or its characteristics.
+
+So, why does minimizing the negative log probability of the true $y$ work? Well, a perfect classifier would assign a probability of 1 to the correct outcome and a probability of 0 to the incorrect result. This means that the closer $\hat{y}$ is to 1, the better the classifier; conversely, the closer that $\hat{y}$ is to 0, the worse the classifier. Since the negative log of the probability ranges from 0 (negative log of 1, no loss) to infinity (negative log of 0, infinite loss), it makes for a convenient loss metric. The cross-entropy loss function also ensures that the probability of the correct answer is maximized, while the probability of the incorrect outcome is minimized. Since these probabilities sum to 1, increased probability of a correct output comes at the expense of the probability of the incorrect outcome [@Daniel].
+
+## Logistic Regression Gradient
+The next step is to calculate the gradient of the cross-entropy loss function. We'll start by defining the derivative of sigma with respect to its inputs:
+$$\frac{\partial}{\partial z}\sigma(z)=\sigma(z)[1-\sigma(z)]$$
+We'll need that later.  The partial derivative of the cross entropy function for a single datapoint (x,y), with respect to each $\theta$ is:
+$$
+\begin{equation}
+\begin{split}
+\frac{\partial J(\theta)}{\partial \theta_j}&=\frac{\partial}{\partial \theta_j}-[\text{y log}\space\sigma(\theta^Tx)+\frac{\partial}{\partial \theta_j}(1-y)\text{log}[1-\sigma(\theta^Tx)]]\hspace{20mm} &\text{derivative of sum of terms}\\
+&=-\bigg[\frac{y}{\sigma(\theta^Tx)}-\frac{1-y}{1-\sigma(\theta^Tx)}\bigg]\frac{\partial}{\partial \theta_j}\sigma(\theta^Tx)\hspace{20mm} &\text{derivative of log }f(x)\\
+&=-\bigg[\frac{y}{\sigma(\theta^Tx)}-\frac{1-y}{1-\sigma(\theta^Tx)}\bigg]\sigma(\theta^Tx)[1-\sigma(\theta^Tx)]x_j\hspace{20mm} &\text{chain rule + derivative of sigma}\\
+&=-\bigg[\frac{y-\sigma(\theta^Tx)}{\sigma(\theta^Tx)[1-\sigma(\theta^Tx)]}\bigg]\sigma(\theta^Tx)[1-\sigma(\theta^Tx)]x_j\hspace{20mm} &\text{algebraic manipulation}\\
+&=-[y-\sigma(\theta^Tx)]x_j\hspace{20mm} &\text{cancelling terms}\\
+&=[\sigma(\theta^Tx)-y]x_j\hspace{20mm} &\text{distributing the negative sign}
+\end{split}
+\end{equation}
+$$
+Since the derivative of sums is the sum of derivatives, the gradient of $\theta$ is simply the sum of this term for each training datapoint.
+$$\frac{\partial J(\theta)}{\partial\theta_j}=\displaystyle\sum_{i=1}^M[\sigma(\theta^Tx^{(i)})-y^{(i)}]x_j^{(i)}$$
+## Gradient Descent Parameter Update Rule
+Now that we've defined the gradient of the cross entropy function, we can employ Gradient Descent to minimize the cross-entropy loss function in the same way that we used gradient *descent* to minimize the quadratic cost function. The update rule for the parameters $\theta$ is:
+$$
+\begin{split}
+\theta_j&:=\theta_j - \alpha\cdot\frac{\partial J(\theta)}{\partial \theta_j}\\
+&:=\theta_j-\alpha\cdot\displaystyle\sum_{i=0}^m\big[\sigma(\theta^Tx)-y^{(i)}\big]x_j^{(i)}
+\end{split}
+$$
+Where $\alpha$ is the magnitude of the step size we take [@Piech2016].
+
+
+## Logistic Regression Model Representation Summary
+To summarize, the logistic regression model representation is:
+$$
+\begin{equation}
+\begin{split}
+\text{Hypothesis Function}\hspace{30mm}&h_\theta(x)=\sigma(\theta^Tx)\\
+\text{Cost Function}\hspace{30mm}&J(\theta)=-[y\space\text{log}\space\sigma(\theta^Tx)+(1-y)\space\text{log}(1-\sigma(\theta^Tx))]\\
+\text{Gradient}\hspace{30mm}&\nabla{J\theta}=\displaystyle\sum_{i=1}^m[\sigma(\theta^Tx^{(i)})-y^{(i)}]x_j^{(i)}\\
+\text{Parameter Update Rule}\hspace{30mm}&\theta_j := \theta_j-\alpha\nabla J_\theta
+\end{split}
+\end{equation}
+$$
+
+## Key Take-aways
+1. Logistic regression is motivated by the desire to produce a hypothesis function that is linear by inputs and produces a valid probability distribution.    
+2. The hypothesis space is therefore those functions that render probabilities $y\in[0,1]$ such that:
+$$
+\begin{align}
+p(y=1|x) &= \sigma(z)\\
+p(y=0|x) &= 1-\sigma(z)\\
+z = \theta^Tx
+\end{align}
+$$
+3. Maximizing the likelihood function is synonymous to minimizing the cross entropy cost function.
+
+Thanks, sincerely for playing along. I invite your questions, comments, and recommendations regarding any of this content. In the next section, we will explore the multinomial logistic regression model.

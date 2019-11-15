@@ -1,0 +1,108 @@
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+TeX: {
+equationNumbers: {
+autoNumber: "all",
+formatNumber: function (n) {return ''+n}
+}
+}});</script>
+
+# Linear Regression with Gradient Descent  
+This is section __ of a 6-part series on Gradient Descent. We are now in the build phase. In prior section, we outlined the overall plan and we setup our development environment. In this section, we will build Gradient Descent to support Linear Regression. As a reminder, `r kfigr::figr(label = "v1_strategy", prefix = TRUE, link = TRUE, type="Figure")` summarizes our agenda for version one of our estimator.
+
+![](../content/figures/v1_linear_regression.png)
+
+`r kfigr::figr(label = "v1_strategy", prefix = TRUE, link = TRUE, type="Figure")`: Roadmap Version 1
+
+Starting from the bottom up, our agenda is:
+
+* Utils - Data management utilities      
+* Cost - Classes used to compute costs    
+* Metrics - Classes that compute metrics that are used to evaluate model performance     
+* Gradient Descent - The base class for all regression and classification classes     
+* Linear Regression - The Linear Regression subclass/interface.
+
+## Utilities
+Let's warm up with a few utilities.  We will need:    
+* Batch Generator - Generates batches of the data in designated batch sizes.     
+* Standard Scaler - Standardizes data to a zero mean and unit variance.               
+* Data Split - Splits the data into training and test sets.        
+
+Let's import a few libraries that we will need.
+```{python util_imports, echo=T, eval=F}
+from math import ceil
+import numpy as np
+from sklearn.base import TransformerMixin, BaseEstimator
+```
+
+
+### Batch Generator
+Here's the code for the batch generator.
+```{python batch_generator, echo=T, eval=F,code=readLines('../gradient_descent/utils/data_manager.py')[212:244]}
+```
+The Gradient Descent variants are distinguished by the batch size. This little routine will allow us to build a single estimator, parameterized by batch size, to support Batch, Stochastic, and Mini-batch Gradient Descent.
+
+### Standard Scaler
+The following routine will standardize data by removing the mean and scaling to a unit variance. We modeled the interface after the [scikit-learn transformer](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html).
+```{python standard_scaler, echo=T, eval=F,code=readLines('../gradient_descent/utils/data_manager.py')[16:99]}
+```
+This function will allow us to center and scale the data and to return it to its original values. Inheriting from sklearn's TransformerMixin and BaseEstimator classes will create a fit_transform(X) method that will perform both the fit and transform methods in a single step.
+
+### Data Split
+This function splits the data X, (and optionally y) into training and test sets. It supports a stratify feature for categorical data to ensure that each split contains nearly the same distribution of classes as found in the entire dataset. 
+```{python standard_scaler, echo=T, eval=F,code=readLines('../gradient_descent/utils/data_manager.py')[124:211]}
+```
+Crude, but effective way to split both continuous and categorical data.
+
+## Cost Functions
+The cost module will house all the classes responsible for computing the costs and gradients. Let's start by importing some packages we will need.
+
+```{python cost_imports, echo=T, eval=F}
+from abc import ABC, abstractmethod
+import numpy as np
+```
+
+Since we will be implementing a range of cost functions for regression and classification settings, it would make sense to establish a class heirarchy that would give us some flexibility and control as we integrate new cost functions in downstream releases.
+
+```{python cost_class_hierarchy, echo=T, eval=F,code=readLines('../gradient_descent/operations/cost.py')[10:19]}
+```
+
+Quadratic or Mean Squared Error Loss (MSE), Mean Squared Logarithmic Error Loss and Mean Absolute Error Loss are among the cost functions most used in regression settings. For this release; however, we will be implementing the quadratic (MSE) cost function.
+
+### Quadratic Cost Function
+The quadratic (MSE) cost function is essentially, the default cost function for regression contexts. Why? Assuming that:    
+
+1. the  distribution of the target variable is Gaussian,    
+2. the error is normally distributed around zero, and          
+3. the variance is independent of the input variables,
+
+minimizing the quadratic (MSE) cost function is equivalent to applying maximum likelihood estimation to our model. 
+The likelihood function $\mathcal{L}$ of some model parameter or parameters $\theta$ is defined as the probability of obtaining the observed data ($O$), given the model parameter(s) $\theta$.
+$$\mathcal{L}(\theta|O) = P(O|\theta)$$
+Assuming that:  
+1. the  distribution of the target variable  is Gaussian,    
+2. the error term 
+
+
+
+For this release, we will be implementing the **quadratic cost function**, also called the Mean Squared Error (MSE) loss function. 
+
+It 
+
+
+Here we define the abstract base class from which all cost classes will inherit.
+```{python cost_class_hierarchy, echo=T, eval=F,code=readLines('../gradient_descent/operations/cost.py')[10:19]}
+```
+
+Looking ahead, we may support a range of regression and classification cost functions, so let's set up a class hierarchy that will give us some flexibility and control when implementing new cost functions. 
+```{python cost_class_hierarchy, echo=T, eval=F,code=readLines('../gradient_descent/operations/cost.py')[20:26]}
+```
+
+For this release, we will be implementing the **quadratic cost function**, given by:
+$$J(\theta)=\frac{1}{2m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2$$
+The gradient of the quadratic cost function is given by:
+$$\nabla J_\theta=\frac{1}{m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})x_j^{(i)}\space(\text{for every j})$$
+For a derivation of the gradient, feel free to revert back to the [prior section](). Here's the code.
+```{python cost_class_hierarchy, echo=T, eval=F,code=readLines('../gradient_descent/operations/cost.py')[30:49]}
+```
+

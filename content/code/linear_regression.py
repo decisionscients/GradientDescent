@@ -1,5 +1,5 @@
 # ============================================================================ #
-#                                 CONVEXITY                                    #
+#                             LINEAR REGRESSION                                #
 # ============================================================================ #
 # Renders stacked line charts showing convex and non-convex obj function
 #%%
@@ -45,6 +45,8 @@ layout = go.Layout(title='Boston Housing Prices by Rooms',
                    height=400,
                    width=800,
                    showlegend=False,
+                   xaxis_title="Average No. Rooms",
+                   yaxis_title="Median Price ($000)",
                    margin=dict(l=10,r=10,t=40,b=10),
                    template='plotly_white'
                    )

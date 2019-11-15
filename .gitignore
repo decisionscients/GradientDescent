@@ -8,13 +8,16 @@ __pycache__/
 
 # Content to filter
 content/*.html
-figures/*.gif
+content/figures/
 /figures
 *.html
 
 # Filter bibliography files
 content/*.bib
 !content/Machine Learning.bib
+
+# Notes
+notes/
 
 # Distribution / packaging
 .Python

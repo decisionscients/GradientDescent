@@ -7,12 +7,12 @@ formatNumber: function (n) {return ''+n}
 }
 }});</script>
 
-# Gradient Descent Intuition
-This is section __ of a 6-part series on Gradient Descent. Our objective here is to developing the mathematical intuition behind gradient descent. 
+# Gradient Descent Optimization
+This is section __ of a 6-part series on Gradient Descent. Our objective here is to developing the mathematical intuition behind Gradient Descent optimization. 
 
 In the prior section, we defined the model representation of a supervised learning prediction problem in terms of a hypothesis function for predictions, a cost function that quantifies a penalty for bad predictions, the gradient and an iterative algorithm that uses the gradient to find the minimum of the cost function. 
 
-In this section, we unveal the underlying mathematical concepts of gradient descent in order to really understand how it works.
+In this section, we unveal the underlying mathematical concepts of Gradient Descent in order to really understand how it works.
 
 With that, let's start with a question.
 
@@ -27,7 +27,7 @@ For this piece, we will assume that our objective functions are differentiable.
 
 As shown in the top row of `r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`, a function that is differentiable at a point, say $x_0$ is one whose derivative exists at $x_0$. It has a (non-vertical) tangent line at that point, it is relatively smooth, and does not contain any breaks, bends, or cusps.
 
-There are extensions of gradient descent that relax the differentiability assumption, but those are a subject for another post.
+There are extensions of Gradient Descent that relax the differentiability assumption, but those are a subject for another post.
 
 ## Minimize Univariate Differentiable Function
 Let's start with a relatively simple function - the univariate differentiable function. How do we minimize this thing? Assuming that $n=1$, we have $f : \mathbb{R} \to \mathbb{R}$, a univariate real-valued function as shown in `r kfigr::figr(label = "convex", prefix = TRUE, link = TRUE, type="Figure")`.
@@ -56,7 +56,7 @@ htmltools::includeHTML("./content/figures/nonconvex.html")
 
 If we start at $x_0$, we end up in the left basin, which happens to be the global minimum; however, If we start at $x_1$, we eventually arrive at a sub-optimal *local* minimum. 
 
-The takeaway? Gradient descent is guaranteed to converge to a global minimum with convex objective functions. On the other hand, non-convex functions have multiple minima. As such, there is no guarantee that gradient descent will converge to the global minimum for such non-convex objective functions. 
+The takeaway? Gradient descent is guaranteed to converge to a global minimum with convex objective functions. On the other hand, non-convex functions have multiple minima. As such, there is no guarantee that Gradient Descent will converge to the global minimum for such non-convex objective functions. 
 
 Ça va for univariate functions. What about multivariate objective functions?
 
@@ -241,7 +241,7 @@ Since $s\ne f^\prime(x)$, as $h \to 0$, the numerator of the ratio of errors goe
 
 Because, the error of the tangent lines goes to zero faster than the error of any other line through the point, the tangent line is the **best local linear approximation** to $f$ at $x$ [@Bivens1986]. 
 
-Ok, we've adequately covered differentiability and differentation. We've examined univariate and multivariate linear equations and tangent line approximation. Let's move on to the general multivariate ideas behind gradient descent.
+Ok, we've adequately covered differentiability and differentation. We've examined univariate and multivariate linear equations and tangent line approximation. Let's move on to the general multivariate ideas behind Gradient Descent.
 
 ### Scalar and Vector Valued Functions
 In general, there are two types of multivariate functions: scalar-valued functions and vector-valued functions. 

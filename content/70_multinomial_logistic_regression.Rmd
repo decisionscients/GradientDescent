@@ -1,0 +1,122 @@
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+TeX: {
+equationNumbers: {
+autoNumber: "all",
+formatNumber: function (n) {return ''+n}
+}
+}});</script>
+
+# Multinomial Logistic Regression
+This is section __ of a 6-part series on Gradient Descent. In the prior section, we examined the logistic regression model. Here, we will examine the multinomial logistic regression framework in terms of its hypothesis space, cost function, maximum likelihood estimation and gradient. By the end of this piece, you will:
+
+* understand the motivation and assumptions behind the multinomial logistic regression hypothesis space     
+* be able to derive the cross-entropy (softmax) cost function    
+* relate the cost function to maximum likelihood estimation         
+* be able to compute the gradient of cross-entropy cost function  
+
+Multinomial logistic regression is used to model nominal outcomes, in which the log odds of the outcomes are modeled as linear combinations of the independent variables. For instance, a person's choice of occupation may be influenced by education level, parent's occupation, and degrees earned. A clinician may be interested in predicting the probability that a person will  
+uses a generalization of the sigmoid, called the **softmax** function, which takes a vector $z=[z_1, z_2,\dots,z_k]$ of $k$ arbitrary values and maps them to a probability distribution, where each value is in the range (0,1) and the probabilities sum up to one.
+
+The softmax function is defined as:
+$$\text{softmax}(z_i)=\frac{e^{z_i}}{\displaystyle\sum_{j=1}^ke^{z_j}}\space 1\le i \le k$$
+Hence, the softmax of an input vector $z=[z_1, z_2,\dots,z_k]$ is a vector itself:
+$$\text{softmax}(z)=\bigg[\frac{e^{z_1}}{\sum_{i=1}^ke^{z_i}},\frac{e^{z_2}}{\sum_{i=1}^ke^{z_i}},\dots,\frac{e^{z_k}}{\sum_{i=1}^ke^{z_i}}\bigg]\label{ref:softmax}$$
+The denominator $\sum_{i=1}^ke^{z_i}$ is used to normalize all values into probabilities. 
+
+Once again, adding $\theta_0=1$, we can simplify our weighted sum as:
+$$z_i=\theta_i x$$
+
+To expand $\ref{softmax}$, we will have separate weights for each of the $K$ classes.
+$$p(y=c|x) = \frac{e^{\theta_c x}}{\sum_{j=1}^ke^{\theta_j x}}$$
+Like the sigmoid, the softmax function:     
+* squashes outliers to values toward zero or one.
+
+
+### Multinomial Logistic Regression Hypothesis Function  
+To compute the probability $p(y=c|x)$, the hypothesis function for multinomial logistic regression uses a generalization of the sigmoid, called the **softmax** function. As with the logistic regression, we first compute $z$ as a linear function of the inputs. Unlike logistic regression; however, multinomial logistic regression has separate parameters $\theta$ for each of the $K$ classes:
+$$z=\theta_k^Tx\hspace{10mm}\text{for all }k \in K$$
+Then we put $z$ through a softmax function that takes the vector $z=[z_1, z_2, \dots, z_k]$ of $k$ arbitrary classes and maps them to a probability distribution, with each value $z_i$ in range (0,1), and all values summing to 1. The softmax function is given by:
+$$\text{softmax}(z_i)=\frac{e^{z_i}}{\sum_{j=1}^k e^{z_j}}\hspace{30mm}1\le i\le k$$
+For instance, the softmax of an input vector $z=[z_1, z_2, \dots z_k]$ is a vector:
+$$\text{softmax}(z)=\Bigg[\frac{e^{z_1}}{\sum_{i=1}^ke^{z_i}},\frac{e^{z_2}}{\sum_{i=1}^ke^{z_i}},\dots,\frac{e^{z_k}}{\sum_{i=1}^ke^{z_i}}\Bigg]$$
+The denominator $\sum_{i=1}^ke^{z_i}$ normalizes the probabilities so that they sum to 1. 
+
+Finally, to compute $p(y=c|x)$, we include separate parameters $\theta$ for each of the $K$ classes:
+$$h_\theta(x)=p(y=c|x)=\frac{e^{\theta_c^Tx}}{\sum_{j=1}^ke^{\theta_j^Tx}}$$
+Like the sigmoid function, the softmax tends to push outliers towards 0 or 1.
+
+### Multinomial Logistic Regression Cost Function    
+Like binary logistic regression, multinomial logistic regression uses cross-entropy loss, but it uses the softmax function instead of the sigmoid. The cross-entropy loss for a single example $x$ is the sum of the logs of the $K$ output classes:
+$$
+\begin{split}
+L_{CE}(\hat{y},y)&=-\displaystyle\sum_{k=1}^K1\{y=k\}\space\text{log}\space p(y=k|x)\\
+&=-\displaystyle\sum_{k=1}^K1\{y=k\}\space\text{log}\space\frac{e^{\theta^T_kx}}{\sum_{j=1}^K e^{\theta^T_jx}}
+\end{split}
+$$
+Here, we use the $1\{\}$ function which evaluates to 1 if the condition inside the brackets is true, and to 0 otherwise.
+
+The overall cost is given by:
+$$
+\begin{split}
+J(\theta)&=-\displaystyle\sum_{i=1}^m\displaystyle\sum_{k=1}^K\space 1\{y^{(i)}=k\}\space \text{log}\space p(y^{(i)}=k|x^{(i)}; \theta)\\
+&=-\displaystyle\sum_{i=1}^m\displaystyle\sum_{k=1}^K\space 1\{y^{(i)}=k\}\space \text{log}\space\frac{e^{\theta^T_kx^{(i)}}}{\sum_{j=1}^K e^{\theta^T_jx^{(i)}}}
+\end{split}
+\label{eq:multinomial_ce_loss}
+$$
+
+### Multinomial Logistic Regression Gradient          
+The gradient for the softmax cross-entropy cost function is:
+$$
+\begin{split}
+\nabla_{\theta_k}J(\theta)&=-\displaystyle\sum_{i=1}^m(1\{y^{(i)}=k\}-p(y^{(i)}=k|x^{(i)}))x_k\\
+&=-\displaystyle\sum_{i=1}^m\Bigg(1\{y^{(i)}=k\}-\frac{e^{\theta^T_kx^{(i)}}}{\sum_{j=1}^K e^{\theta^T_jx^{(i)}}}\Bigg)x_k
+\end{split}
+$$
+
+
+To derive the gradient $\nabla_{\theta_k}J(\theta)$, we rearrange $\ref{eq:multinomial_ce_loss}$:
+$$
+\begin{split}
+J(\theta)&=-\displaystyle\sum_{i=1}^m\displaystyle\sum_{k=1}^K\space 1\{y^{(i)}=k\}[\text{log}\space e^{\theta^T_kx^{(i)}}-\text{log}\displaystyle\sum_{l=1}^Ke^{\theta^T_lx^{(i)}}\\
+&=-\displaystyle\sum_{i=1}^m\displaystyle\sum_{k=1}^K\space 1\{y^{(i)}=k\}[\theta^T_kx^{(i)}-\text{log}\displaystyle\sum_{l=1}^Ke^{\theta^T_lx^{(i)}}
+\end{split}
+$$
+
+The partial derivative of $J$ with respect to $\theta_k$ is (treat $1\{y^{(i)}=k\}$ as a constant):
+$$
+\begin{split}
+\nabla_{\theta_k}J(\theta)=-\displaystyle\sum_{i=1}^m\space 1\{y^{(i)}=k\}\bigg[x^{(i)}-\frac{1}{\sum_{j=1}^K e^{\theta^T_jx^{(i)}}}e^{\theta^T_kx^{(i)}}x^{(i)}\bigg]+1\{y^{(i)}\ne k\}\bigg[-\frac{1}{\sum_{j=1}^K e^{\theta^T_jx^{(i)}}}e^{\theta^T_kx^{(i)}}x^{(i)}\bigg]
+\end{split}
+$$
+Note that $1\{y^{(i)}\ne k\}$ is zero. We factor $x^{(i)}$ out of the first term and $\nabla_{\theta_k}J(\theta)$ becomes:
+$$
+\nabla_{\theta_k}J(\theta)=-\displaystyle\sum_{i=1}^m\space \bigg[x^{(i)}\bigg(1\{y^{(i)}=k\}-\frac{e^{\theta^T_kx^{(i)}}}{\sum_{j=1}^K e^{\theta^T_jx^{(i)}}}\bigg)\bigg]
+$$
+
+### Multinomial Logistic Regression with Gradient Descent Parameter Update Rule   
+One again, our parameter update is scaled by learning rate $\alpha$:
+$$\theta_j:=\theta_j - \alpha\cdot\nabla_{\theta_k}J(\theta)$$
+
+### Multinomial Logistic Regression Model Representation Summary
+To summarize, the multinomial logistic regression model representation is:
+$$
+\begin{equation}
+\begin{split}
+\text{Hypothesis Function}\hspace{30mm}&h_\theta(x)=\frac{e^{\theta_c^Tx}}{\sum_{j=1}^ke^{\theta_j^Tx}}\\
+\text{Cost Function}\hspace{30mm}&J(\theta)=-\displaystyle\sum_{i=1}^m\displaystyle\sum_{k=1}^K\space 1\{y^{(i)}=k\}\space \text{log}\space\frac{e^{\theta^T_kx^{(i)}}}{\sum_{j=1}^K e^{\theta^T_jx^{(i)}}}\\
+\text{Gradient}\hspace{30mm}&\nabla_{\theta_k}J(\theta)=-\displaystyle\sum_{i=1}^m\space \bigg[x^{(i)}\bigg(1\{y^{(i)}=k\}-\frac{e^{\theta^T_kx^{(i)}}}{\sum_{j=1}^K e^{\theta^T_jx^{(i)}}}\bigg)\bigg]\\
+\text{Parameter Update Rule}\hspace{30mm}&\theta_j := \theta_j-\alpha\nabla J_\theta
+\end{split}
+\end{equation}
+$$
+
+## Summary  
+This section was about applying the mathematical concepts behind Gradient Descent to regression and classification tasks. If you have been following along, you should be able to:   
+
+* specify hypothesis functions for regression and classification tasks     
+* define the quadratic, sigmoid cross-entropy, and softmax cross-entropy cost functions    
+* derive the gradient of the cost functions with respect to the models parameters    
+* perform parameter updates using the gradients    
+
+In the next section, we will begin to build our Gradient Descent estimator to support linear regression, logistic regression and multinomial logistic regression.

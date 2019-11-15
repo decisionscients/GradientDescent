@@ -7,18 +7,15 @@ formatNumber: function (n) {return ''+n}
 }
 }});</script>
 
-```{python 20_intro, code=readLines('./code/20_intro.py'), results='hide'}
-```
-
 # Introduction to Gradient Descent 
 
-So, what is gradient descent?
+So, what is Gradient Descent?
 
-> Gradient descent is a first-order iterative optimization algorithm for finding the minimum of a real-valued, differentiable objective function: $\mathbb{R}^n \to \mathbb{R}$. Parameterized by $\theta \in \mathbb{R}^n$, gradient descent iteratively updates the parameters in the direction opposite to the gradient of the objective function $\nabla_\theta J(\theta)$.
+> Gradient descent is a first-order iterative optimization algorithm for finding the minimum of a real-valued, differentiable objective function: $\mathbb{R}^n \to \mathbb{R}$. Parameterized by $\theta \in \mathbb{R}^n$, Gradient Descent iteratively updates the parameters in the direction opposite to the gradient of the objective function $\nabla_\theta J(\theta)$.
 
 If that definition works for you, skip ahead to the next section.  Otherwise, if you are like me (and I know I am), hang with me. Let's start by modeling a simple linear regression example.
 
-## Linear Regression Model 
+## Linear Regression Model Representation
 Consider the task of predicting home prices based upon data provided in a training set consisting of set of features $X$, including for instance:    
 
 * per capita crime rate (crim)     
@@ -31,11 +28,14 @@ Consider the task of predicting home prices based upon data provided in a traini
 and the target variable $Y$, the sales price of the home in $1000s. For visualization purposes and to keep things simple, we'll limit ourselves to a single predictor, **rm**, average number of rooms per dwelling. Hereinafter, we will refer to this single predictor as **rooms**.
 
 The scatterplot below shows the relationship between the number of rooms and the home price in the data set.
-![](./figures/price_by_rooms.png)
-
-`r kfigr::figr(label = "price_by_rooms", prefix = TRUE, link = TRUE, type="Figure")`: Housing Prices by No. Rooms
+```{r boston_scatterplot, echo=FALSE}
+htmltools::includeHTML("./content/figures/boston.html")
+```
+`r kfigr::figr(label = "boston_scatterplot", prefix = TRUE, link = TRUE, type="Figure")`: Housing Prices by Average No. Rooms
 
 As one my expect, prices appear to be positively associated with the number of rooms.
+
+### Hypothesis Function
 
 Our task is to learn a function, a *hypothesis* function, that renders a sales price prediction given the number of rooms in the home. Our hypothesis function is given by:    
 
@@ -71,7 +71,7 @@ where $\theta$ and $x$ are both vectors $\in\mathbb{R}^n$ and $n$ is the number 
 
 Well we need some way of measuring how good a prediction actually is. Enter the cost function.
 
-## Cost (Objective) Function
+### Cost (Objective) Function
 In order to learn the parameters $\theta$ that that make $h(x)$ as close to $y$ as possible, we need a function that measures, for each value of the $\theta$'s, how close $h(x^{(i)})$'s are to the corresponding $y^{(i)}$'s. A *loss* function for the $i$th sample quantifies a *penalty* for predicting $\hat{y_i}$ when the true value is $y_i$, and is given by:
 $$L(x^{(i)},y^{(i)};\theta)$$
 There are several loss functions used in regression and classification problems, but the **quadratic** loss function is most commonly used for regression tasks and is given by:
@@ -82,22 +82,19 @@ Note that this loss function $L$ measures the quality of the prediction for an *
 To measure the quality of the predictions for a full training set $X$, we take the average of the loss $L$ across all observations. Concretely, this **cost** function is given by:
 
 $$J(\theta)=\frac{1}{2m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2\label{eq:cost}$$
+```{r quadratic_cost_surface, echo=FALSE}
+htmltools::includeHTML("./content/figures/quadratic_cost_surface.html")
+```
+`r kfigr::figr(label = "quadratic_cost_surface", prefix = TRUE, link = TRUE, type="Figure")`: Quadratic Cost Surface for $\theta \in \mathbb{R}^2$
 
-`r kfigr::figr(label = "convex_cost", prefix = TRUE, link = TRUE, type="Figure")` provides a 3d visualization of the cost surface for the quadratic loss function. The values of our parameters are plotted horizontally, and their associated costs are rendered in the vertical direction. The quadratic cost function is characterized by its convex shape and the existence of a single *global* minimum.  
+The cost surface depicted in `r kfigr::figr(label = "quadratic_cost_surface", prefix = TRUE, link = TRUE, type="Figure")` is typical for the quadratic cost function. Since the function is convex, it has a single global minimum. The parameter values associated with the minimum cost are said to *minimize* the cost function.  We can therefore redefine our prediction task. Our goal now is to find the values for the parameters $\theta$ that minimize equation $\ref{eq:cost}$. 
 
-![](./figures/quadratic_cost_surface.png)
-
-`r kfigr::figr(label = "convex_cost", prefix = TRUE, link = TRUE, type="Figure")` Cost Surface for Quadratic Cost Function 
-
-The parameter values associated with the minimum cost are said to *minimize* the cost function.  We can therefore redefine our prediction task. Our goal now is to find the values for the parameters $\theta$ that minimize the following cost function. 
-
-$$\text{min.}\space J(\theta)=\frac{1}{2m}\displaystyle\sum_{i=1}^m(\theta^Tx^{(i)}-y^{(i)})^2.$$
 Note, the cost function is also referred to as an **objective function** in optimization contexts. I will be using both terms interchangeably.
 
-## The Gradient
+### The Gradient
 Now that we have our objective function, we seek the model parameters $\theta$ that minimize $J(\theta)$. Referring to `r kfigr::figr(label = "steepest", prefix = TRUE, link = TRUE, type="Figure")`, let's assume we've randomly initialized our parameters $\theta_0$ and $\theta_1$. Applying our cost function $\ref{eq:cost}$, would place us at the start point indicated below.
 
-![](./figures/convex_cost_surface_annotated.png)
+(../content/figures/convex_cost_surface_annotated.png)
 
 `r kfigr::figr(label = "steepest", prefix = TRUE, link = TRUE, type="Figure")`: Gradient $\in \mathbb{R}^2$
 
@@ -116,10 +113,10 @@ where:
 
 As shown in `r kfigr::figr(label = "steepest", prefix = TRUE, link = TRUE, type="Figure")`, the gradient also happens to be the direction of steepest *ascent* of the cost function. Since we are minimizing $J(\theta)$, we want to move in the direction *opposite* the gradient, the direction of **steepest descent**. Ergo the algorithm's name.
 
-## Learning Rate
+### Learning Rate
 Now that we have the direction, we need to specify our step size. This is given by the **learning rate** $\alpha$. 
 
-![](./figures/learningrates.jpeg)
+![](../content/figures/learningrates.jpeg)
 
 Image by [Andrej Karpathy](http://cs231n.github.io/neural-networks-3/)
 
@@ -127,7 +124,7 @@ Image by [Andrej Karpathy](http://cs231n.github.io/neural-networks-3/)
 
 The learning rate must be carefully chosen, because if it is too small (blue line) the algorithm will take an excessive amount of time to train. High learning rates (green line) decay the loss faster, but they may cause the algorithm to oscillate around a minimum, resulting in higher loss values. Excessively high learning rates (yellow line) may cause the algorithm to diverge from the minimum all together. 
 
-## Parameter Update
+### Parameter Update
 Given the gradient $\nabla J(\theta)$, and a suitable learning rate $\alpha$, we are now ready to update our parameters $\theta$ in order to 'move' to the new location which minimizes the cost function the most. We do this by performing the following update to $\theta$:
 
 $$\theta_j=: \theta_j - \alpha \nabla J(\theta_j)\space\text{(for every j).}$$
@@ -138,7 +135,7 @@ We simultaneously subtract the gradient multiplied by the learning rate from the
 Once the parameters are updated, the gradient is computed for the new location and the process repeats until a stopping condition is met or convergence is achieved.
 
 ## Gradient Descent Algorithm
-The following pseudo-code summarizes the gradient descent iterative algorithm.
+The following pseudo-code summarizes the Gradient Descent iterative algorithm.
 
 Parameters: Training Set: $\tau$; learning Rate: $\alpha$; Normal Distribution Std: $\sigma$; epochs
 1. Initialize parameters $\theta$ with random normal distribution $\theta \sim N(0,\sigma^2)$
@@ -152,39 +149,30 @@ We begin by initializing the parameters $\theta$ with the random normal distribu
 Let's see it in action.
 
 ## Gradient Descent in Action
-For this demonstration, we used the [Boston Housing housing](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_boston.html#sklearn.datasets.load_boston) dataset. For visualization purpose, we modeled a single predictor, the mean number of rooms. Three models were fit with learning rates 0.001, 0.01, and 0.1 respectively. Each model was trained for 500 epochs. Here are the gradient descent trajectories.
-![](./figures/search_by_learning_rate.gif)
+For this demonstration, we used the [Boston Housing housing](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_boston.html#sklearn.datasets.load_boston) dataset. For visualization purpose, we modeled a single predictor, the mean number of rooms. Three models were fit with learning rates 0.001, 0.01, and 0.1 respectively. Each model was trained for 500 epochs. Here are the Gradient Descent trajectories.
+![](../content/figures/search_by_learning_rate.gif)
 
 `r kfigr::figr(label = "search_by_learning_rate", prefix = TRUE, link = TRUE, type="Figure")`: Gradient Descent Trajectories for Various Learning Rates
 
 The convergence rates for the selected learning rates are evident. Let's see how the models fit the data.
 
-![](./figures/fit_by_learning_rate.gif)
+![](../content/figures/fit_by_learning_rate.gif)
 
 `r kfigr::figr(label = "fit_by_learning_rate", prefix = TRUE, link = TRUE, type="Figure")`: Model Fit for Various Learning Rates
 
-Viola! 
-
 ## Key Takeaways
-1. Gradient descent is a first-order iterative optimization algorithm for finding the minimum of a real-valued, differentiable objective function: $\mathbb{R}^n \to \mathbb{R}$. Parameterized by $\theta \in \mathbb{R}^n$, gradient descent iteratively updates the parameters in the direction opposite to the gradient of the objective function $\nabla_\theta J(\theta)$.
 
-2. The (linear regression) model representation begins with a hypothesis function $h_\theta(x)$ which renders a prediction based upon a set of features $X$ and a set of parameters or weights $\theta$ and is given by:
+1. Gradient descent is a first-order iterative optimization algorithm for finding the minimum of a real-valued, differentiable objective function: $\mathbb{R}^n \to \mathbb{R}$. Parameterized by $\theta \in \mathbb{R}^n$, Gradient Descent iteratively updates the parameters in the direction opposite to the gradient of the objective function $\nabla_\theta J(\theta)$.    
+2. The model representation can be summarized as follows.
+$$
+\begin{equation}
+\begin{split}
+\text{Hypothesis Function}\hspace{30mm}&h_\theta(x)=\theta^Tx\\
+\text{Cost Function}\hspace{30mm}&J(\theta)=\frac{1}{2m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2\\
+\text{Gradient}\hspace{30mm}&\nabla{J\theta}=\frac{1}{m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})x_j^{(i)}\space(\text{for every j})\\
+\text{Parameter Update Rule}\hspace{30mm}&\theta_j := \theta_j-\alpha\nabla J_\theta
+\end{split}
+\end{equation}
+$$
 
-$$h_\theta(x)=\displaystyle\sum_{i=0}^n\theta_ix_i=\theta^Tx,$$
-3. The **loss function** renders a penalty for predicting $\hat{y}$ when the true value is $y$. We denote the loss function for the $ith$ observation as:
-$$L(x^{(i)},y^{(i)};\theta)$$
-There are a variety of loss functions that can be used in regression and classification settings. The quadratic loss function is the most commonly used in regression settings and is given by:  
-$$L(x^{(i)},y^{(i)},\theta)=\frac{1}{2}(\theta^Tx^{(i)}-y^{(i)})^2$$
-4. A loss function computes the penalty for a single observation. A **cost function**; on the other hand, renders the penalty for a set of observations: either a batch or an entire training set.  The quadratic cost function is the average of the per-observation losses and is given by:
-
-$$J(\theta)=\frac{1}{2m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2$$
-5. Now that we've measured the cost associated with a set of parameters $\theta$, we minimize the cost function by taking a set in the direction of steepest descent, represented by a vector of partial derivatives with respect to the parameters $\theta$. This vectored valued function is called the **gradient** and is given by:
-
-$$\nabla J(\theta)=\frac{1}{m}\displaystyle\sum_{i=1}^m(\theta^Tx^{(i)}-y^{(i)}) \cdot x_j^{(i)}\space\text{(for every j).}$$
-6. Once the gradient is computed, we update the parameters $\theta$ by subtracting the gradient vector, scaled by the learning rate $\alpha$ as follows:
-
-$$\theta_j=: \theta_j - \alpha \nabla J(\theta_j)\space\text{(for every j).}$$
-7. Finally, we repeat 1-6 for a predetermined number of epochs or until a convergence criterion is met. 
-
-## Next Section
-In the next section, we will develop the mathematical intuition behind gradient descent.
+In the next section, we will survey the variants to the Gradient Descent algorithm.

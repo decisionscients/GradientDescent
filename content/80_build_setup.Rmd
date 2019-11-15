@@ -1,0 +1,170 @@
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+TeX: {
+equationNumbers: {
+autoNumber: "all",
+formatNumber: function (n) {return ''+n}
+}
+}});</script>
+
+# Gradient Descent Implementation 
+This is section __ of a 6-part series on Gradient Descent. In prior sections, we introduced Gradient Descent as a solution to unconstrained optimization problems. We've surveyed its variants, Stochastic Gradient Descent and Mini-Batch Gradient Descent. Following that introduction, we dug deeper into the mathematics and defined the model representations for regression and classification tasks. By this stage, we should have a pretty solid understanding of how and why Gradient Descent works. 
+
+In this section, and subsequent sections, we will leverage what we've learned to build a modular, flexible and extensible Gradient Descent package that:   
+
+1. supports Linear Regression, Binary Classification, and Multinomial Classification tasks.    
+2. iterfaces well with other open sourced packages such as scikit-learn and its Pipeline and GridSearchCV modules.
+3. can be easily extended to include optimization algorithms and other customizations.     
+
+## Implementation Strategy
+
+The overall functionality will be delivered over the following seven releases.
+
+1. **Linear Regression** - Batch, Stochastic Gradient Descent (SGD) and Mini-Batch Gradient Descent for Linear Regression.     
+2. **Logistic Regression**  - Gradient Descent variants to support binary classification.       
+3. **Multinomial Logistic Regression** - Gradient Descent variants to support multinomial classification.           
+4. **Regularized Regression** - Lasso Regression, Ridge Regression and ElasticNet Regression.    
+5. **Regularized Classification** - Regularization techniques applied to binary and multinomial classification problems.
+6. **Learning Rate Schedules** - Support for learning rate schedules such as time-decay, step-decay, and exponential decay learning rates.    
+7. **Early Stopping** - Several early stopping techniques to avoid overfitting.
+
+The following animation presents the overall application architecture, highlighting the modules that will be written/updated during each of the seven releases.
+
+![](../content/figures/strategy.gif)
+
+`r kfigr::figr(label = "strategy", prefix = TRUE, link = TRUE, type="Figure")`: Application architecture and release strategy.
+
+The functionality is covered by 16 components. The **Gradient Descent** class occupies the center of the package and executes the Gradient Descent algorithm. This base class is inherited by the regression classes on the left, and the classification classes on the right. The Gradient Descent class is supported by the following four modules.   
+
+* **Utils**: Provides data management functionality such as batch generation, data standardization and training/test set splitting.    
+* **Cost**: Classes that compute quadratic, cross-entropy, and softmax cross-entropy losses as well as their gradients.     
+* **Metrics**: Classes that encapsulate the computation of metrics used to evaluate model performance.    
+* **Callbacks**: Functionality executed at specified steps in the training process, such as history and logging.
+
+The three modules across the top of the diagram include classes that extend the functionality.  
+
+* **Learning Rate Schedules**: Provides learning rate decay functionality.    
+* **Regularization**: Computes L1, L2, and ElasticNet regularization and the associated derivatives.     
+* **Early Stopping**: Implements various early stopping regimes to prevent overfitting. 
+
+From a design perspective, three 
+
+1. Design for comprehension, rather than performance optimization.    
+2. Integrate with scikit learn's framework for estimators. This will allow us to take advantage of their Pipeline and GridSearchCV modules for model selection and evaluation.     
+3. Keep it as modular as possible so that extensions can be added with minimal changes to existing code. 
+
+## Preliminaries
+If you are a Python package development expert, or even a novice, feel free to skip this section. This is intended for those who are new to Python package development. If you are in this camp, I would propose the following workflow that:
+
+* builds the Python project with appropriate files and structure    
+* manages dependencies and virtual environments     
+* includes document generation tools such as Sphinx   
+* integrates services such as GitHub, Travis-CI, the Python Package Index (PyPI)  
+
+### Create Project File Structure
+The first step is to install the [Cookiecutter PyPackage](github.com/audreyr/cookiecutter-pypackage), a Cookiecutter template for creating Python packages. Cookiecutter templates make creating and maintaining well structured and professional Python packages easy and intuitive. The PyPackage Cookiecutter embodies best practices from experts and stands out as the gold-standard for creating well structure Python packages. 
+
+You can install the Cookiecutter using pip.
+```{r cookiecutter, echo=T, eval=F}
+pip install -U cookiecutter
+```
+
+Next, generate a Python package:
+```{r generate_package, echo=T, eval=F}
+cookiecutter https://github.com/audreyr/cookiecutter-pypackage.git
+```
+
+You will be prompted to enter values, then it will create your Python package in the current working directory, based upon those values.
+
+In terms of a directory structure, you are welcome to choose any structure that works for you. Importing Python modules can be fraught with bugs and unintended 'module not found' errors. So, I would recommend that you create a simple structure that works, then stick with it. The following directory structure will be used throughtout the remainder of this series. 
+
+gradient_descent/  <--- Root Directory
+  operations/      <--- Metrics, cost
+  utils/           <--- Data management
+  
+The core classes will live under the gradient_descent root. Create your directory structure now and each directory should have an empty file named __init__.py.  
+
+### Create a Virtual Environment
+For this, I recommend Conda environments. Both a package and environment manager, Conda allows you to install packages (written in any language) from repositories such as Anaconda and from PyPI using pip. To create an environment with Conda for Python development, navigate to your project's root directory and run:
+
+```{r create_env, echo=T, eval=F}
+$ conda create --name conda-env python
+```
+Important: Replace 'conda-env' with the name of your environment. Going forward, we will always use 'conda-env' for the name of our conda environment.
+
+This will use the Python version currently running in your shell's Python interpreter. To indicate a different version, use:
+```{r create_env_version, echo=T, eval=F}
+$ conda create --n conda-env python=3.7
+```
+
+Next, you will active your enviroment with:
+```{r activate, echo=T, eval=F}
+$ conda activate conda-env
+(conda-env) $
+```
+
+### Install Requirements into Current Environment
+The development requirements for your project are listed in the 'requirements_dev.txt' file located in your project's root directory. Install the development requirements into the current environment.
+```{r requirements, echo=T, eval=F}
+$ pip install -r requirements_dev.txt
+```
+
+### Create GitHub Repository
+Create a GitHub repository, then commit and push your project to your remote master branch. Instructions for adding an existing project to GitHub using the command line can be found [here](help.github.com/en/github/importing-your-projects-to-github/adding-an-existing-project-to-github-using-the-command-line).
+
+### Setup Deployment
+If you are planning to deploy your project to the Python Package Index, [register](pypi.org) your project with PyPI.   
+
+Next, you will be adding your repository to [Travis-CI](www.travis-ci.org). Travis-CI is a testing and deployment platform that allows us to automatically test GitHub commits and pull requests, then deploy releases to production. 
+
+To add your repository to your Travis-CI account, simply sign in with your GitHub account. Click '+' next to 'My Repositories' on the left side of the screen. Navigate to your repository and click the button next to 'settings'. 
+Install and run the Travis CLI using Ruby gem, navigate to your project's repository and run:
+```{r travis_cli_install, echo=T, eval=F}
+$ gem install travis
+```
+
+To setup Travis-CI to deploy to PyPI, run the command:
+```{r travis_pypi, echo=T, eval=F}
+$ travis setup pypi
+```
+
+You will be prompted to enter:    
+Username: [enter your PyPI username, without brackets]   
+Password: [enter your PyPI password, without brackets]    
+release only tagged commits? |yes|    
+deploy as wheel file too? |yes|   
+Release only from [your GitHub usename]/[your package name]? |yes|     
+Encrypt Password? |yes|     
+
+Now, to deploy a release to PyPI, you must:    
+1. Bump the version number in the setup.py file in your project's root directory.      
+2. Change current_version to the new version number in the setup.cfg file in your project's root directory.     
+3. Commit changes to GitHub using the command line or an IDE that supports Git.    
+4. Tag the commit by running git tag, such as:
+
+```{r git_tag, echo=T, eval=F}
+$ git tag -a v1.4 -m "My Version 1.4"
+```
+
+5. Push the commit to your remote GitHub repository.
+
+Viola! Travis-CI will upload the new version to PyPI.
+
+### Setup ReadTheDocs Account
+You may sign up for a [ReadTheDocs](www.readthedocs.org) account using your GitHub account. Once you've gone through the sign up procedure, add your project's repository to your ReadTheDocs account and turn on the ReadTheDocs service hook.
+
+### Add a Requirements.txt file
+Add a requirement.txt file that specifies the packages you will need for your project and their versions. Navigate to your project's root directory and enter:
+```{r pip_freeze, echo=T, eval=F}
+$ pip freeze > requirements.txt
+```
+
+To force pip to properly resolve dependencies, you may run:
+```{r requirements_install, echo=T, eval=F}
+$ pip install -r requirements.txt
+```
+
+### Activate Pyup
+Activate your project on [pyup.io](www.pyup.io). PyUp tracks dependencies for vulnerabilities and automatically fixes them so that you don't deploy known vulnerabilities to production.
+
+That should do it. Now, we code...finally!
