@@ -11,7 +11,8 @@ formatNumber: function (n) {return ''+n}
 
 So, what is Gradient Descent?
 
-> Gradient descent is a first-order iterative optimization algorithm for finding the minimum of a real-valued, differentiable objective function: $\mathbb{R}^n \to \mathbb{R}$. Parameterized by $\theta \in \mathbb{R}^n$, Gradient Descent iteratively updates the parameters in the direction opposite to the gradient of the objective function $\nabla_\theta J(\theta)$.
+> Gradient descent is a first-order iterative optimization algorithm for finding the minimum of a real-valued, differentiable objective function: $\mathbb{R}^n \to \mathbb{R}$. Parameterized by $\theta \in \mathbb{R}^n$, Gradient Descent minimizes objective functions by iteratively updating model parameters in the direction opposite to the gradient of the objective function $\nabla_\theta J(\theta)$.
+
 
 If that definition works for you, skip ahead to the next section.  Otherwise, if you are like me (and I know I am), hang with me. Let's start by modeling a simple linear regression example.
 

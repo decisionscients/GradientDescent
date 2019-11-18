@@ -7,7 +7,72 @@ formatNumber: function (n) {return ''+n}
 }
 }});</script>
 
-# Gradient Descent Variants
+![](../content/figures/top_view.jpg)
+
+# What is Gradient Descent?
+
+> Gradient descent is a first-order iterative optimization algorithm for finding the minimum of a real-valued, differentiable objective function: $\mathbb{R}^n \to \mathbb{R}$. Parameterized by $\theta \in \mathbb{R}^n$, Gradient Descent minimizes objective functions by iteratively updating model parameters in the direction opposite to the gradient of the objective function $\nabla_\theta J(\theta)$.
+
+Wait! What? If that definition works for you, skip ahead to the next section. Otherwise, if you are like me (and I know I am), perhaps an English language translation may be useful.
+
+## Steepest Descent Challenge
+Consider this. It's late May, daybreak at 58° 54′ 23″ N, 137° 31′ 36″ W. A dense fog descends over the summit of Mount Fairweather (no, really), British Columbia, bringing into stark relief, your team's Brobdingnagian challenge ahead. The six-day ascent, characterized by "fair weather" and spectacular views, would be a mere warm-up for the descent.
+
+The goal? Descend Mount Fairweather to base camp using the path of steepest descent. 
+1. 
+
+
+
+characterized the five-day climb to the summit. The five-day climb to the summit was completed 
+the crystallizing the team's placing in stark relief,  a cloud over the team's celebratory mood. Clearly, the descent would be as hairy as the 5 day climb to  
+
+
+
+
+The team's celebratory mood gave way to slight apprehension as an intense fog descends.
+The celebratory mood 
+MountThe team's celeb celebrates another successful summit in the usual way, a cup of store-brand tea with a Snickers bar. The The celebratory You and your team are sharing cups of tea to celebrate a successful summit up the face of Mount Fairweather in British Columbia when the mother of all fog patterns descends. You brush back the snow from the face of your Garmin Fenix. The elevation reads 3732 m. Time? 8:15 am. Your goal? Get you and the team safely down to base camp at Paradise Valley by twilight, uncork that bottle of Macallan Fine Oak 30 you had been saving, and toast the team's triumphant ascent and successful Gradient Descent.
+
+Based upon the elevation, you are able to estimate your current location on the the map to within a couple hundred meters. The plan? Follow the path of steepest descent down the face to Paradise Valley Lodge. The team has to descend about 2400 meters over a horizontal distance of approximately 22 kilometers. According to Naismith’s rule, it should take the team about  11 hours to complete the descent. Plenty of water and food and about 8 hours of daylight remaining. You wouldn't be anywhere else, but here.
+
+You assumed your position at the front of the file. With about ten meter visibility, you arc your Lacroix LX Telescopic ski pole 180 degrees in the downhill direction. Then you take 10 steps in the direction of steepest descent, and repeat. Yeah, it was going to be a slow slog through the persistent fog. 
+
+Early progress was hindered by high variance in the path of descent. Limited visibility forced you to take elevation measurements and to adjust your path of steepest descent every 10 steps. This effective batch size of 10 steps lead to a highly stochastic and noisy descent. That said, the average gradient over the second leg were among the highest gradients observed during the descent ($\nabla \approx 0.268$). This introduced a slight dampening effect on the noise introduced by the small batch size as we made our way to the first waypoint. Over the first leg, the team descended some 1000 meters over a distance of Euclidean distance of 3.86 kilometers for a rate of 48 minutes per kilometer. The Garmin showed 11:21 am and an elevation 2432 meters. With the first leg complete, you guzzled some water, choaked down a powerbar, then prepared yourself for the second leg. Eighteen kilometers to go.
+
+Morale was high for the second leg, despite diminishing visibility. As a consequence of increased fog density, batch size was further reduced from 10 steps to 5 steps per measurement. In addition, the average angle of descent fell to 10 degrees from 15 degrees, reducing the gradient and the associated step size by 34%. Yet the pace  improved 22% from 48 to 37.5 minutes per kilometer, as the team descending some 500 meters over a Euclidean distance of 2.9 kilometers. By 1:09 pm, the team had descended some 1500 meters over a distance of 6.74 kilometers. The second leg was complete with about 15 kilometers to go. Estimated time of arrival, 7:00 pm.
+
+
+A map reconnaissance of the third leg revealed a steepest descent path which passed perilously close to Fairweather Glacier, an alternate camp at an estimated elevation of 800 meters. Sailing off course towards Fairweather Glacier would mean another night in the wild, no scotch and a pis&-ed off climbing team. Fortunately, some of the fog has lifted, and the increased visibility would allow the team to return the batch size back to 10 steps, from five, thereby reducing variance in the descent path. On the other hand, the angle of descent would drop from 10 to 5 degrees, resulting in a 80% reduction in the gradient to a magnitude $\approx 0.035$. Diminishing gradients are difficult to distinguish in when using steepest descent and, as a consequence, error may be propagated into the descent path. Countermeasures must be taken to ensure that the descent path does not converge at Fairweather Glacier. The third leg would cover some 5.7 kilometers and a vertical distance of 200 meters. Transit time was 1.9 hours or 20 minutes per kilometer. The third leg was completed at 3:03 pm with 9.2 kilometers remaining. Estimated time of arrival, 7:15pm
+
+The forth leg began with some apprehension. Given the compounding effects of navigation errors, we could not discount the likelihood of being off course, or converging towards Fairweather Glacier. A map reconnaissance to confirm our current position and trajectory was inconclusive at a precision of 50 meters. The forth leg would descend another 100 meters over a distance of 5.7 kilometers. The average gradient would be $\approx$ 0.0174, corresponding to an approximate average angle of descent of one degree. Despite increased visibility, the path of steepest descent would be exceedingly difficult to discern with precision and would be prone to noise. We had three options. 
+
+**Option 1: SGD with Learning Rate Decay**: Run SGD with a starting learning rate $\alpha=1$, then decay it by a factor of $2$ each 50 steps for 11 cycles or 550 steps and a ending learning rate of $\alpha=0.000976$. In the early cycles, one should observe large step sizes with high variance. This should obviate settlement into the suboptimal minimum at Fairweather Glacier. As the learning rate anneals, the step sizes and the variance in the trajectory should decrease as you approach leg length of $\approx 6 kilometers.
+**Option 2: SGD with Increased Batch Size**: Run SGD with a constant learning rate $\alpha=0.01$ and a starting batch size of $2$. Increase the batch size by a factor of $2$ each 50 steps for 11 cycles. Maximum batch size of $2048$ will be encountered at 500 steps. In the early phase of training this leg, we should see high variance, smaller batch sizes and more frequent updates. As the batch size increases, parameter updates and variance falls as gradient estimates improve as you approach the leg length of 6 kilometers.  
+**Option 3: SGD Hybrid**: Start with learning rate $\alpha=1$ and batch size = $2$. For the next 5 cycles, increase batch size by a factor of $2$ eac 50 steps, until you reach a maximum batch size of 64. After that, the batch size remains constant and the learning rate decays by a factor of $2$ each 50 steps, until a minimum learning rate $alpha=0.03125$ is observed. In the early stages of training, we should observe large step sizes with high variance. Variance should gradually fall as batch size increases to 64. Then, step sizes should gradually decrease along with variance until a minimum learning rate of $\alpha=0.03125$ is observed.
+
+
+over  that has propagated try to   undermined As you check the maps, you As you guzzle down water, you notice less chatter amongst the team and you can't help wondering  It was just after 3:00pm and We made waypoint #3 at around 3pm. This last leg covered a vertical descent of just 200 meters over a horizontal  distance of 5.7 kilometers. By this time, we had traversed a total of 12.5 kilometers, over 5.7 kilometers since waypoint $2choosing the direction of steepest descent became so difficult that we could not be certain that we were on course.  difficult to determine the direction of the next step. Visibility had not improved and you wondered if you had arrived at Fairweather Glacier. The map check was inconclusive. You chose to trust your navigation and carefully monitor the elevation and continue until you reach Paradise Valley at 209m or you observed a kilometer of continuous climbing. 
+
+Fifty five minutes of daylight remaining. Temperature dropped to -20 C. Circulation in your extremities affected. Down to last 50 grams of Gatorade when you notice a three degree change in elevation.  Five degrees, seven degrees, then 10 degrees of descent. You have traversed a saddle point in the terrain and you were now on the final descent into Paradise Valley. Step sizes increased along with the angle of descent. The barely perceptible sounds of voices and laughter became increasingly vivid with each step. The fog began to clear leaving the blue neon sign, 'Paradise Valley' in stark relief. 'Welcome to Paradise Valley Lodge, what can I get for ya, she said in that disarming Canadian accent? Oban...neat.
+
+While taking a sip of gaterade, it occurs to you that Four hours of daylight.    steps are proportional to the angle of descent Following the path of steepest descent, you make early average hour for 4000 meters flat distance, plus  You are able to make reasonably good progress early  onyou determine the direction of steepest descent and take a step in that direction. down the mountain face and take a step   you You take a few sips of gaterade as you check your trail map
+
+
+
+
+Suppose you have found yourself hiking alone in the mountains of British Columbia one late January afternoon as a dense fog rolls in. The trail map from your hotel's concierge desk is practically useless as visibility has been reduced to about 5 feet. Two hours of daylight, a half bottle of gatorade, and a couple of powerbars stand between you and a rather cool oblivion. Your goal? The valley basin ski lodge cocktail lounge, with the greatest dispatch.
+
+You take a small bite of the powerbar, a sip of the gaterade and take note of your elevation.  Which way is down?  Using your Leki Stealth S Ski Pole, you survey the ground to determine which direction reduces your elevation the most and take a single step, a big step in that direction. Again, you test for the direction of steepest descent. One hour and fifty five minutes of daylight and a 360 degree white-out. Take a step in the direction of steepest descent. Repeat.
+
+As you maneauver down the face towards the valley, you can't help but wonder if continuing in this fashion will lead you back to the valley basin or will it lead to another resort.  back to the ski lodge or some other  Take a sip of the gatorade and a step in the direction You take a step in the direction of steepest descent as you take in the 360 degree white-out? Which way is down? Visibility is down to two feet. One hour and fifty-five minutes of daylight. Testing Using your Leki Stealth S Ski Pole yo
+
+lGet off this damn mountain and back to your hotel in 
+
+Your goal? Make it back to your hotel in the valley basin before you freeze 
+
+
+
+
 There are three variants to Gradient Descent and they are:    
 
 * Batch Gradient Descent    

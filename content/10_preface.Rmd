@@ -5,11 +5,11 @@ In this __part series, we will build a custom, extensible, and modular Gradient 
 
 * Linear Lasso, Ridge, and ElasticNet Regression,   
 * Logistic Regression, and    
-* Multinomial Classification   
+* Multinomial Logistic Regression 
 
 Our package will support:    
 
-* batch, minibatch, and stochastic Gradient Descent,   
+* Batch, Minibatch, and Stochastic Gradient Descent,   
 * regularization methods such as lasso, ridge, and elastic net regression    
 * learning rate decay schedules such as time, step, and exponential decay 
 * various early stopping approaches
