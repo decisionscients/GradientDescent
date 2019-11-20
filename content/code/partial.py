@@ -2,10 +2,10 @@
 # ============================================================================ #
 #                                 LIBRARIES                                    #
 # ============================================================================ #
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
 from matplotlib import cm

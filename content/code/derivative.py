@@ -64,9 +64,9 @@ curve = go.Scatter(x=x, y=y,
 # Point x0            
 point_x0 = go.Scatter(x=[x0], y=[0], 
             mode='markers+text',
-            name='x0',        
+            name='x',        
             marker=dict(color='black'),
-            text=r'x0',
+            text=r'x',
             textposition='bottom center')            
 # ---------------------------------------------------------------------------- #
 #%%
@@ -109,12 +109,17 @@ for k in reversed(range(N)):
                 mode="lines",
                 line=dict(width=2, color="#f28500")),
             go.Scatter(
+                x = secant(P=P,Q=np.array([x_Q[k],y_Q[k]]))[0],
+                y = secant(P=P,Q=np.array([x_Q[k],y_Q[k]]))[1],
+                mode="lines",
+                line=dict(width=2, color="#f28500")),                
+            go.Scatter(
                 x=[x_Q[k]],
                 y=[0],
                 mode='markers+text',
-                name=r'$x0+\Delta x$',        
+                name=r'$x+h$',        
                 marker=dict(color='black'),
-                text=texts(t=r'$x0+\Delta x$',n=k),
+                text=texts(t=r'$x+h$',n=k),
                 textposition='bottom center'),
             go.Scatter(
                 x=np.full(10,[x_Q[k]]),
@@ -132,16 +137,16 @@ for k in reversed(range(N)):
                 x=[x_Q[k]+1],
                 y=[y0+(y_Q[k]-y0)/2],
                 mode='text',
-                name = r"$f(x_0+\Delta x)-f(x_0)$",
-                text=r"$f(x_0+\Delta x)-f(x_0)$",
+                name = r"$f(x+h)-f(x)$",
+                text=r"$f(x+h)-f(x)$",
                 textposition="middle right"
             ),
             go.Scatter(
                 x=[x0+(x_Q[k]-x0)/2],
                 y=[y0-1],
                 mode='text',
-                name=r'$\Delta x$',        
-                text=texts(t=r'$\Delta x$',n=k),
+                name=r'$h$',        
+                text=texts(t=r'$h$',n=k),
                 textposition='bottom center')
         ]
         )
@@ -189,5 +194,5 @@ fig = go.Figure(
 )
 
 
-po.plot(fig, filename='../content/figures/derivative.html',include_mathjax='cdn', auto_open=True)
-#%%
+po.plot(fig, filename='./content/figures/derivative.html',include_mathjax='cdn', auto_open=False)
+

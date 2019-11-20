@@ -9,7 +9,7 @@ __pycache__/
 # Content to filter
 content/*.html
 content/figures/
-/figures
+/figures/
 *.html
 
 # Filter bibliography files

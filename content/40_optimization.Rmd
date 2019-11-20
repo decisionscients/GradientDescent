@@ -7,20 +7,24 @@ formatNumber: function (n) {return ''+n}
 }
 }});</script>
 
-# Gradient Descent Optimization
-This is section __ of a 6-part series on Gradient Descent. Our objective here is to developing the mathematical intuition behind Gradient Descent optimization. 
+# Gradient Descent
+This is section 1st of a _-part series,  Gradient Descent from Scratch. Gradient descent is among *the* most important algorithms in machine learning and is the defacto standard for optimizing deep learning networks. First introduced by Louis Augustin Cauchy in 1847 [@Cauchy1847Methode], Gradient Descent has evolved into a family of optimization algorithms and is now the workhorse behind state-of-the-art deep learning frameworks such as Keras [@chollet2015keras], TensorFlow [@tensorflow2015-whitepaper], Caffe [@jia2014caffe], Lasagne [@lasagne], and PyTorch [@paszke2017automatic], to name a few. 
 
-In the prior section, we defined the model representation of a supervised learning prediction problem in terms of a hypothesis function for predictions, a cost function that quantifies a penalty for bad predictions, the gradient and an iterative algorithm that uses the gradient to find the minimum of the cost function. 
+https://cs231n.github.io/neural-networks-3/
 
-In this section, we unveal the underlying mathematical concepts of Gradient Descent in order to really understand how it works.
+Our objective here is to:   
+
+1. developing the mathematical intuition behind Gradient Descent optimization
+2. introduce the Gradient Descent algorithm
+2. survey and contrast the Gradient Descent variants
 
 With that, let's start with a question.
 
 > What Problem Does Gradient Descent Solve?   
 
-Gradient descent is about solving such *unconstrained optimization* problems. That is, for an objective function $f:\mathbb{R}^n \to \mathbb{R}$ defined on $n\ge1$-dimensional Euclidean space and a data vector $x\in\mathbb{R}^n$, the goal is:
+Gradient descent is about solving such *unconstrained optimization* problems. That is, for a *differentiable* objective function $f:\mathbb{R}^n \to \mathbb{R}$ defined on $n\ge1$-dimensional Euclidean space and a data vector $x\in\mathbb{R}^n$, the goal is:
 $$\text{min} \space f(x)$$
-For this piece, we will assume that our objective functions are differentiable.  
+
 ![](./figures/differentiability.jpg)
 
 `r kfigr::figr(label = "differentiability", prefix = TRUE, link = TRUE, type="Figure")`: Differentiability
@@ -30,7 +34,7 @@ As shown in the top row of `r kfigr::figr(label = "differentiability", prefix = 
 There are extensions of Gradient Descent that relax the differentiability assumption, but those are a subject for another post.
 
 ## Minimize Univariate Differentiable Function
-Let's start with a relatively simple function - the univariate differentiable function. How do we minimize this thing? Assuming that $n=1$, we have $f : \mathbb{R} \to \mathbb{R}$, a univariate real-valued function as shown in `r kfigr::figr(label = "convex", prefix = TRUE, link = TRUE, type="Figure")`.
+Let's start with a relatively simple function $f : \mathbb{R} \to \mathbb{R}$ - the univariate differentiable function. How do we minimize this?
 
 ```{python convex_univariate, results='hide', code=readLines('../content/code/univariate.py')}
 ```
@@ -39,7 +43,7 @@ htmltools::includeHTML("./content/figures/convex.html")
 ```
 `r kfigr::figr(label = "convex_univariate", prefix = TRUE, link = TRUE, type="Figure")`: Convex univariate objective function
 
-So, how would we minimize $f(x)$? Well, if we were at point $x_0$ on `r kfigr::figr(label = "convex_univariate", prefix = TRUE, link = TRUE, type="Figure")`, we observe that the graph is increasing to the left and decreasing to the right, so we move to the right. Starting at $x_1$, we move to the left to make $f$ as small as possible. In either case, we eventually arrive at the bottom of the basin, which happens to be the *global* minimum for $f$. 
+So, how would we minimize $f(x)$? Well, if we were at point $x$ on `r kfigr::figr(label = "convex_univariate", prefix = TRUE, link = TRUE, type="Figure")`, we observe that the graph is increasing to the left and decreasing to the right, so we move to the right. Starting at $x_1$, we move to the left to make $f$ as small as possible. In either case, we eventually arrive at the bottom of the basin, which happens to be the *global* minimum for $f$. 
 
 To be more precise, the basic algorithm for minimizing a univariate $f(x)\in\mathbb{R}$ uses the derivative, $f^\prime(x)$, to determine the direction to move, and is given by:
 
@@ -54,7 +58,7 @@ htmltools::includeHTML("./content/figures/nonconvex.html")
 ```
 `r kfigr::figr(label = "nonconvex_univariate", prefix = TRUE, link = TRUE, type="Figure")`: Non-convex univariate objective function
 
-If we start at $x_0$, we end up in the left basin, which happens to be the global minimum; however, If we start at $x_1$, we eventually arrive at a sub-optimal *local* minimum. 
+If we start at $x$, we end up in the left basin, which happens to be the global minimum; however, If we start at $x_1$, we eventually arrive at a sub-optimal *local* minimum. 
 
 The takeaway? Gradient descent is guaranteed to converge to a global minimum with convex objective functions. On the other hand, non-convex functions have multiple minima. As such, there is no guarantee that Gradient Descent will converge to the global minimum for such non-convex objective functions. 
 
@@ -140,21 +144,21 @@ The best local linear approximation of a univariate differentiable function at a
 * interpret the tangent line as the best local linear approximation of a univariate differentiable function   
 
 #### The Derivative
-A function $f$ is said to be differentiable at $x_0$ if the following limit exists:
-$$\displaystyle{\lim_{\Delta x \to0}}\Big[\frac{f(x_0+\Delta x)-f(x_0)}{\Delta x}\Big].$$
-This limit is called the derivative of $f(x_0)$, denoted as $f^\prime(x_0)$. 
+A function $f$ is said to be differentiable at $x$ if the following limit exists:
+$$\displaystyle{\lim_{h \to0}}\Big[\frac{f(x+h)-f(x)}{h}\Big].$$
+This limit is called the derivative of $f(x)$, denoted as $f^\prime(x)$. 
 
 ```{r derivative_as_limit, echo=FALSE}
 htmltools::includeHTML("./content/figures/derivative.html")
 ```
 `r kfigr::figr(label = "derivative_as_limit", prefix = TRUE, link = TRUE, type="Figure")`: Derivative as a Limit
 
-To develop the intuition behind the derivative as a limit, consider the function $f(x)=x^2$ as specified in `r kfigr::figr(label = "derivative_as_limit", prefix = TRUE, link = TRUE, type="Figure")`. Select a value along the x-axis, say $x_0$, then designate the corresponding point on the curve, $P=f(x_0)$. Now, press play to move along the x-axis some distance $\Delta x$ from $x_0$ to a new point $x_0+\Delta x$, then plot the corresponding point $Q=f(x_0+\Delta x)$. Next, draw the secant line $PQ$ connecting the two points. Now for the crucial part. Reduce $\Delta x$ such that the variable point $Q$ approaches the fixed point $P$ by sliding along the curve. 
+To develop the intuition behind the derivative as a limit, consider the function $f(x)=x^2$ as specified in `r kfigr::figr(label = "derivative_as_limit", prefix = TRUE, link = TRUE, type="Figure")`. Select a value along the x-axis, say $x$, then designate the corresponding point on the curve, $P=f(x)$. Now, press play to move along the x-axis some distance $h$ from $x$ to a new point $x+h$, then plot the corresponding point $Q=f(x+h)$. Next, draw the secant line $PQ$ connecting the two points. Now for the crucial part. Reduce $h$ such that the variable point $Q$ approaches the fixed point $P$ by sliding along the curve. 
 
-What do we notice? First, the secant changes direction as $Q$ approaches point $P$. As the absolute value of $\Delta x$ decreases, the value of $x_0+\Delta x$ approaches $x_0$, and the value of $f(x_0+\Delta x)$ approaches $f(x_0)$. It should be intuitively clear that the tangent line is the limit approached by the secant as $\Delta x\to0$. The slope of the secant line connecting the points ($x_0+\Delta x,f(x_0+\Delta x)$) and ($x_0,f(x_0)$) is the difference in the $y$ values over the difference between the $x$ values. This **difference quotient** becomes:
-$$m=\frac{\Delta y}{\Delta x}=\frac{f(x_0+\Delta x)-f(x_0)}{\Delta x}$$
-Hence small values of $\Delta x$ that approach zero render secant lines that are increasingly better approximations of the tangent line to $f(x)$ at $x_0$. Since the limiting position as $\Delta x \to 0$ of the secant line is the tangent line, the difference quotient as $\Delta x \to 0$, if it exists, will be the slope of the tangent line at ($x_0, f(x_0)$). This limit is defined as the *derivative* of the function $f$ at $x_0$:
-$$f^\prime(x_0)=\lim_{\Delta x\to0}\frac{f(x_0+\Delta x)-f(x_0)}{\Delta x}$$
+What do we notice? First, the secant changes direction as $Q$ approaches point $P$. As the absolute value of $h$ decreases, the value of $x+h$ approaches $x$, and the value of $f(x+h)$ approaches $f(x)$. It should be intuitively clear that the tangent line is the limit approached by the secant as $h\to0$. The slope of the secant line connecting the points ($x+h,f(x+h)$) and ($x,f(x)$) is the difference in the $y$ values over the difference between the $x$ values. This **difference quotient** becomes:
+$$m=\frac{\Delta y}{h}=\frac{f(x+h)-f(x)}{h}$$
+Hence small values of $h$ that approach zero render secant lines that are increasingly better approximations of the tangent line to $f(x)$ at $x$. Since the limiting position as $h \to 0$ of the secant line is the tangent line, the difference quotient as $h \to 0$, if it exists, will be the slope of the tangent line at ($x, f(x)$). This limit is defined as the *derivative* of the function $f$ at $x$:
+$$f^\prime(x)=\lim_{h\to0}\frac{f(x+h)-f(x)}{h}$$
 
 #### Rules of Differentiation
 Differentiation is the process of finding the derivative of a differentiable function. There are two approaches to differentiation. One approach is to use the geometric definition, but this can be quite a slow and cumbersome process. Fortunately, we have a small number of rules that enable us to differentiate large classes of functions quickly.
@@ -199,19 +203,19 @@ So, we've introduced the concept of the derivative and put forward methods for c
 
 #### Tangent Line Equation
 The change in $y$ over the change in $x$ is called the *difference quotient*, and is given by:
-$$m=\frac{\Delta y}{\Delta x}=\frac{y-y_0}{x-x_0}=\frac{f(x_0+\Delta x)-f(x_0)}{(x_0+\Delta x)-x_0}=\frac{f(x_0+\Delta x)-f(x_0)}{\Delta x},$$
-where $\Delta x=(x-x_0)$.
+$$m=\frac{\Delta y}{h}=\frac{y-y_0}{x-x}=\frac{f(x+h)-f(x)}{(x+h)-x}=\frac{f(x+h)-f(x)}{h},$$
+where $h=(x-x)$.
 
-Using derivatives, we've shown that the slope $m$ approaches the slope of the tangent line $f^\prime(x_0)$ as $\Delta x\to0$. Substituting $f^\prime(x_0)$ for $m$ and rearranging into point slope form yields:
-$$y=f(x_0)+f^\prime(x_0)(x-x_0).$$
-So, the derivative is the slope of the tangent line at a point $x_0$.
+Using derivatives, we've shown that the slope $m$ approaches the slope of the tangent line $f^\prime(x)$ as $h\to0$. Substituting $f^\prime(x)$ for $m$ and rearranging into point slope form yields:
+$$y=f(x)+f^\prime(x)(x-x).$$
+So, the derivative is the slope of the tangent line at a point $x$.
 
 #### Tangent Line: Best Local Linear Approximation
-Recall that calculus promises that, for a function $f(x_0)$ and a point suitably close to $x_0$, one can pretend that the true function $f$ is just a linear function at $f(x_0)$. This leads us to the most salient interpretation of the tangent line, and it is this.
+Recall calculus promises that, for a function $f(x)$ and a point suitably close to $x$, one can pretend that the true function $f$ is just a linear function at $f(x)$. This leads us to the most salient interpretation of the tangent line, and it is this.
 
-> The tangent line of a univariate, differentiable function $f$ at point $x_0$ is the **best** local linear approximation of $f$ at $x_0$. 
+> The tangent line of a univariate, differentiable function $f$ at point $x$ is the **best** local linear approximation of $f$ at $x$. 
 
-If we were to zoom into the graph of a function $f$ at a point $x_0$ using a high-powered microscope (or look at it over a small enough interval), the curve of the function would appear to become increasingly straight. In fact, if we observe $f$ at the intersection of the tangent line, the curve and the tangent line would become qualitatively indistinguishable for all points *near* the point of intersection. 
+If we were to zoom into the graph of a function $f$ at a point $x$ using a high-powered microscope (or look at it over a small enough interval), the curve of the function would appear to become increasingly straight. In fact, if we observe $f$ at the intersection of the tangent line, the curve and the tangent line would become qualitatively indistinguishable for all points *near* the point of intersection. 
 
 That is the intuitive answer. Analytically? Consider the following Taylor series at $x$:
 $$f(x+h)=f(x)+hf^\prime(x)+h^2f^{\prime\prime}(x)/2+\cdots$$
