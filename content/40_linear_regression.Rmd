@@ -1,0 +1,285 @@
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+TeX: {
+equationNumbers: {
+autoNumber: "all",
+formatNumber: function (n) {return ''+n}
+}
+}});</script>
+
+# Linear Regression with Gradient Descent from Scratch
+This is section __ of a 6-part series on Gradient Descent. In prior sections, we examined the calculus behind Gradient Descent and explored the relative merits of the Gradient Descent variants: Batch Gradient Descent, Stochastic Gradient Descent and Minibatch Gradient Descent.
+
+During this section, we will design, build, and evaluate a Gradient Decent optimizer for Linear Regression.  Concretely, we will:  
+
+* define the hypothesis space, objective function and its derivative for optimization      
+* implement the three variants, Batch, Stochastic, and Minibatch Gradient Descent     
+* apply the algorithm to three (3) real-world Linear Regression problems            
+* analyze the effect of hyperparameters on algorithm behavior, accuracy, and speed  
+* evaluate performance vis-a-vis available performance benchmarks for each problem   
+
+The overall goal is to understand the basics of Gradient Descent and its variants so that we can:  
+
+* Meet a wider range of real-world optimization challenges, independent of specific frameworks   
+* Customize and apply existing frameworks more effectively     
+* Create custom implementations of algorithms for learning, specialization, or experimentation purposes   
+
+At the end of this post, you will have a reasonably performant and well-written Gradient Descent optimizer, a custom laboratory, that you can explore and enhance with new innovations from the research community.    
+
+## Why implement machine learning algorithms from scratch?
+
+Why build machine learning algorithms from scratch when there is no dearth of highly optimized and tested open-source packages and frameworks that I can use out-of-the-box without a deep understanding of optimization methods, gradients and loss functions. Is the return worth the investment in time? 
+
+![](figures/feynman.jpg)
+
+`r kfigr::figr(label = "feynman", prefix = TRUE, link = TRUE, type="Figure")` (Richard Feynman, February 15, 1988) &copy; California Institute of Technology 
+
+Well, there are several reasons why building an algorithm from scratch may make sense:
+
+* **Learning motivation.** The relative ease with which existing libraries can be deployed can create the illusion of competence when the underlying data science is not well understood. Paraphrasing theoretical physicist, Richard Feynman, we don't understand that which we cannot create. Building machine learning algorithms deepens our intuition into the algorithm's behavior, reveals the effects of their hyperparameters and reinforces the underlying mathematical principles. Consequently we:    
+
+  + gain a deeper appreciation for existing, battle-tested, and optimized implementations,   
+  + adapt to new frameworks and APIs with greater agility,   
+  + explain, with greater credibility, how and why an algorithm performs to colleagues and stakeholders    
+  
+* **Specialization** We may need to create a custom implementation because we are not satisfied with the 'features' of existing implementations. Suppose they don't support KL Divergence loss or cyclical learning rate schedules with stochastic Gradient Descent. Perhaps you've discovered a research paper describing an innovative approach to early stopping and you want to run computational complexity experiments. By implementing algorithms, we are able to fine-tune the functionality to suit specific project requirements. This can improve predictive or computational performance.
+
+* **Experimentation** Once you've implemented a machine learning algorithm, you can perform studies to evaluate the predictive and computational performance of various parameters and new functionality. This can lead to new insights and discoveries for future implementations that you can contribute and promote.
+
+## Case Studies
+We will evaluate our optimizer on three datasets, each presenting a different optimization challenge in terms of number of features and overall database size. 
+
+### Boston Housing Dataset
+The Boston Housing Dataset contains information collected by the U.S Census Service concerning housing in the area of Boston Mass. The dataset was original published by by Harrison, D. and Rubinfeld, D.L. [@Harrison] in their 1978 study the use of housing market data to ascertain willingness ot pay for clean air. The dataset has been used extensively throughout the literature to benchmark algorithms. The dataset, with 506 observations and 13 real-valued features, was obtained from [scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_boston.html). Our task is to predict median housing prices based upon features such as per capita crima rate, average number of rooms per dwelling, pupil-teacher ratio, age of the homes and others. It is currently maintained by Carnegie Mellon University, where the [codebook](http://lib.stat.cmu.edu/datasets/boston) and data may be obtained.
+
+#### Evaluation Metric
+The evaluation metric for this case will be the root mean squared error (RMSE):
+$$\text{RMSE}(y)=\sqrt{\displaystyle\sum_{i=1}^m(y_i-\hat{y})^2}$$
+The performance benchmark is to be within the top 50 scores for the 2016 [Kaggle Boston Housing competition](https://www.kaggle.com/c/boston-housing/overview/evaluation). As of the time of this writing, the 50th score on the leaderboard was $\text{RMSE}=4.11517$.
+
+### Facebook Comment Volume Prediction
+The Facebook Comment Volume Prediction Dataset was obtained by Kamaljot Singh to study and model social network user activity patterns [@facebook]. The dataset contains 40949 observations of Facebook Pages, with  54 features such as:
+
+* Page popularity likes   
+* Page checkins     
+* Number of comments in last 24 hours, relative to a base date/time          
+* Number of comments in first 24 hours after publication, but before base date/time
+* Post share count     
+* Post published weekday    
+
+The task is to predict the number of comments in H hours (H is a given feature). The dataset was obtained from the [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/datasets/Facebook+Comment+Volume+Dataset)
+
+#### Evaluation Metrics
+We will be using the results of Singh's 2015 report[@facebook] as a performance benchmark. He used two metrics to evaluate performance of several models.
+
+##### Hits@10
+The observations which were predicted to have the top 10 number of comments were counted among the observations that were the actual top 10 observations in terms of comments. This was the measurement of accuracy.
+
+Singh was able to achieve HITS@10 scores from $4.6\pm0.800$ to $6.4\pm1.200$.
+
+##### AUC@10
+The Area Under the Receiver-Operator Curve (AUC), he considered the true top 10 blog pages receiving the hightest number of comments as positive. The AUC was computed as follows:
+$$\text{AUC}=\frac{T_p}{T_p+F_p}$$
+where:      
+* $T_p$ was the number of predicted top 10 blog pages that were also in the true top 10 blog pages     
+* $F_p$ was the number of predicted top 10 blog pages that were not in the true top 10 blog pages     
+
+For Singh's experiments, AUC@10 scores ranged from $0.704\pm0.168$ to $0.878\pm0.085$.
+
+##### Computation Time
+Training computation time in seconds was obtained for each of Singh's models. Times ranged from 6-145 seconds. 
+
+### Million Song Dataset (MSD) Year Dataset
+The Million Song Dataset (MSD) [@Bertin-Mahieux2011] is a freely-available collection of audio features and metadata for a million contemporary popular music tracks. This is a subset of the MSD and contains audio features of songs with the year of the song. The purpose of this set is to predict the release year of a song from its audio features. Songs are mostly western, commercial tracks ranging from 1922 to 2011, with a peak in the year 2000s. There are 515,345 observations and 90 features. Among the 90 features, 12 are timbre averages and 78 are timbre covariance.
+
+#### Evaluation Metric
+The performance metric that we will use is mean squared error (MSE), defined as:
+$$\text{MSE}=\frac{1}{m}\displaystyle\sum_{i=1}^m(y_i-\hat{y}_i)^2$$
+
+## Linear Regression and Optimization 
+Linear Regression is routinely used in business settings to evaluate trends, make estimates or forecasts, predict faults, and assess risk. It is used to generate insights into customer behvavior, reveal factors influencing profitability, and analyze marketing, pricing, sales, and promotional effectiveness. Predictive analytics, operational efficiency, and decision support, are among the many applications that make Linear Regression the most widely-used statistical technique, by far.
+
+Linear regression is the study of linear, additive relationships between variables. Given:
+
+* a set of $m$ training examples with independent variables $X=\{x^{(1)},x^{(2)},\dots,x^{(m)}\}$, and dependent variable $Y=\{y^{(1)},y^{(2)},\dots,y^{(m)}\}$, 
+* where each example contains a feature vector $x\in \mathbb{R}^N$ real-valued attributes $x^{(i)T}=\{x^{(i)}_1,x^{(i)}_2,\dots, x^{(i)}_n \}$.   
+
+our task is to find a hypothesis function $h(x)$ that best approximates the true target function $f(x)$ such that $\forall x, h(x) \approx f(x)$.
+
+### Linear Regression Assumptions
+We suppose that the true data generating model is:
+$$Y=\theta_0+\displaystyle\sum_{i=1}^n\theta_ix_i+\epsilon$$
+where:    
+
+* $\theta_0$ is the bias term     
+* $\theta_i$ is the $i$th coefficient, or parameter    
+* $x_i$ is the $i$th variable in $x$    
+* $\epsilon$ is the error term         
+* $n$ is the number of variables or features in $x$    
+
+Four principal assumptions will shape the hypothesis space, the space of candidate functions $h(x)$.
+
+**1. Linearity**:The central property of this function is that the expected value of the dependent variable $Y$ is a linear function of each of the independent variables, holding the others constant.      
+**2. Additivity**: The effects of the different independent variables on the expected value of the dependent variable are additive.     
+**3. Errors are I.I.D.**: Errors $\epsilon$ are independently and identically normally distributed such that $\epsilon \sim \mathcal{N}(0,\sigma^2)$      
+**4. Homoscedasticity**: Errors $\epsilon$ have a constant variance vis-a-vis predictions and independent variables.    
+
+### Linear Regression Hypothesis Space
+Given the assumptions above, our hypothesis space is the set of linear functions of the form:
+$$h_\theta(x)=\theta_0+\displaystyle\sum_{i=1}^n\theta_ix_i$$
+To simplify our notation, we can add an intercept term $x_0=1$ to our feature vector $x$. Now, we can treat $\theta_0$ as just another parameter to learn. This simplifies our notation because we can now represent our hypothesis in the *vectorized* form:
+$$h_\theta(x)=\displaystyle\sum_{i=0}^n\theta_ix_i=\theta^Tx$$
+The variables $X$ can come from different sources:  
+
+* quantitative inputs,     
+* transformations of quantitative inputs, such as log, square-root or square,      
+* basis expansions, such as $X_2=X_1^2, X_3=X_1^3$ leading to a polynomial representation,     
+* numeric or "dummy" coding of levels of quantitative inputs,     
+* interactions between variables, such as $X_3=X_1\times X_2$
+
+Regardless of the source, the hypothesis space is linear in the parameters  [@hastie01statisticallearning]. We assume a linear relationship between the independent and dependent variables because:    
+
+* linear relationships are the simplest *non-trivial* relationships that one can imagine,    
+* linear relationships are the easiest to work with,    
+* the 'true' relationships between our variables are often at least *approximately* linear over the range of values of interest,       
+* non-linear relationships can be linearized by transforming the variables    
+
+Each parameter $\theta_1, \theta_2, \dots, \theta_n$ is a real number, and is associated with one of the input features $x_1, x_2, \dots, x_n$. The parameter $\theta_j$ represents how important that input $x_j$ is to the hypothesis or prediction. The additional constant $\theta_0$, the bias term, is the prediction that the model would make if all the $x$'s were zero.
+
+## Linear Regression Cost Function
+Having defined our hypothesis space, our next step is to specify a *cost* function to measure a penalty when predicting $\hat{y}$ when the true value of the dependent variable is $y$. The overall cost is given by:
+$$J(\theta)=\frac{1}{2m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2$$
+This **quadratic** function, also known as the least squares or Mean Squared Error (MSE) cost function, is convex with a single global minimum, well suited for Gradient Descent optimization. Note that this is not actually the mean squared error formula. We've added the $\frac{1}{2}$ factor as a mathematical convenience when computing the gradient. Nonetheless, the $\frac{1}{2}$ factor doesn't affect the optimization problem. The parameters $\theta$ that minimize $MSE$ are the same as those that minimize $\frac{1}{2}MSE$.  
+
+There are several other cost functions used in regression settings, including Mean Squared Logarithmic Error Loss and Mean Absolute Error Loss, but the quadratic, Mean Squared Error (MSE) cost function is essentially the default for regression problems.  Why? It has to do with **maximum likelihood estimation (MLE)**. 
+
+### Maximum Likelihood Estimation (MLE)
+MLE is an approach for estimating the parameter or parameters $\theta$ of a model. Given a dependent variable $y=y_1, y_2,\dots, y_m$, a feature matrix $X_1, X_2,\dots, X_3$ and parameters $\theta$ and $\sigma^2$, MLE measures the propensity that the data was generated from the model. The parameter estimate, obtained by maximizing a **likelihood function** is called the maximum likelihood estimate $\hat{\theta}_{MLE}$ 
+
+#### Likelihood Function
+Recall that our statistical model is defined as follows:    
+
+* The distribution of $X$ is arbitrary and perhaps non-random.     
+* $y=\theta_0+\displaystyle\sum_{i=1}^n\theta_ix_i+\epsilon$    
+* $\hat{y}=\theta_0+\displaystyle\sum_{i=1}^n\theta_ix_i$    
+* Adding the bias term to the feature matrix $X$, $\hat{y}=\theta^Tx$
+* $\epsilon \sim mathcal{N}(0,\sigma^2)$, and is independent of X.      
+* $\epsilon$ is independent across observations.    
+
+Consequently $Y$ is independent across observations and $Y$ is normally distributed around $\hat{Y}$ as such, $y\sim \mathcal{N}(\hat{y},\sigma^2)$. Because of these strong assumptions, we can express the conditional probability of observing the output $y$, given $x$ and the model parameters $\theta$ and $\sigma^2$ as the Guassian Probability Density Function (PDF):  
+$$p(y|x;\theta,\sigma^2)=\frac{1}{\sqrt{2\pi\sigma^2}}e^{-\frac{(y-\mu)^2}{2\sigma^2}}$$
+Since we don't know the true population parameters, we substitute:    
+
+* $\mu$ with $\hat{y}=\theta^Tx$   
+* $\sigma^2$ with $s^2$, the sample variance
+
+This yields the probability density function of $Y$ for each $x$ as:
+$$p(y|x;\theta,s^2)=\frac{1}{\sqrt{2\pi s^2}}e^{-\frac{(y-\theta^Tx)^2}{2s^2}}$$
+The Guassian probability density functions with various parameterizations are plotted below. The red distribution is the standard Gaussian $P(x) \sim \mathcal{N}(0,1)$.
+![](./figures/pdf.png)
+
+`r kfigr::figr(label = "sigmoid", prefix = TRUE, link = TRUE, type="Figure")`: A selection of Gaussian Probability Density Functions (PDFs) **Source**: Wikimedia Commons
+
+The **likelihood function** for the training set is the product of the individual probability densities.
+$$\mathcal{L}(\theta,s^2)=\prod_{i=1}^mp(y^{(i)}|x^{(i)};\theta,s^2)=\prod_{i=1}^m\frac{1}{\sqrt{2\pi s^2}}e^{-\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2s^2}}\label{}$$
+Probability densities are relatively small numbers and multiplying them may lead to arithmetic underflow. So its often easier to work with the natural logarithm of the likelihood function, which we will call the **log-likelihood**. Taking the log of equation ($\ref{likelihood}$) and applying the product rule, the log-likelihood becomes:
+
+$$
+\begin{align}
+\text{log }(\mathcal{L}(\theta, s^2))&=\text{log }\prod_{i=1}^mp(y^{(i)}|x^{(i)};\theta,s^2)\\
+&=\displaystyle\sum_{i=1}^m\text{log }p(y^{(i)}|x^{(i)};\theta,s^2)\\
+&=-\frac{m}{2}\text{log }2\pi-m\text{ log }s-\frac{1}{2s^2}\displaystyle\sum_{i=1}^m(y^{(i)}-(\theta^Tx^{(i)}))^2
+\end{align}
+$$
+Since the logarithm is a monotonically increasing function, that is to say that if $x_1>x_2$, then $\text{log}(x_1)>\text{log}(x_2)$, the value that maximizes the likelihood is also the value that maximizes the log-likelihood function. 
+
+To find the value of $\theta$ that maximizes the log-likelihood function, we find its critical point, the point at which the function's partial derivative with respect to parameters $\theta$ is zero:
+$$\frac{\partial\mathcal{L}(\theta)}{\partial \theta}=0$$
+We can remove all the terms that do not contain our parameter $\theta$ as they do not have any effect on the optimization problem. Hence, our objective function can be reduced to:
+$$
+\begin{align}
+\text{log}(\mathcal{L}(\theta, s^2))&=-\displaystyle\sum_{i=1}^m{(y-\theta^Tx^{(i)})^2}
+\end{align}
+\label{ref:ll}
+$$
+Therefore, the value $\theta$ that maximizes equation ($\ref{ll}$) is the maximum likelihood estimate $\hat{\theta}_{MSE}$:
+$$\hat{\theta}_{MSE}=\text{arg max}\bigg[-\displaystyle\sum_{i=1}^m(y^{(i)}-\hat{y}^{(i)})^2\bigg]\label{ref:mse}$$
+Maximizing a function is the same as minimizing its negative, so we can rewrite (${\ref{mse}}$) as:
+$$\hat{\theta}_{MSE}=\text{arg min}\displaystyle\sum_{i=1}^m(y^{(i)}-\hat{y}^{(i)})^2$$
+Taking the average across all observations, we get:
+$$\hat{\theta}_{MSE}=\text{arg min}\frac{1}{m}\displaystyle\sum_{i=1}^m(y^{(i)}-\hat{y}^{(i)})^2$$
+Viola! Aside from the 2 in the denominator of the cost function, this is precisely the quadratic (MSE) cost function. Maximizing the likelihood function is the same as minimizing the quadratic (MSE) cost function. This the *real* reason that the quadratic MSE cost function is so widely used in regression contexts.
+
+### Gradient of the Linear Regression Cost Function
+We've justified our cost function in terms of maximum likelihood estimation. Now, we compute the gradient of the cost function, with respect to parameters $\theta$, in order to determine the direction that decreases the cost function the most. Recall, the gradient, $\nabla J(\theta)$, is a vector-valued function, in which the vector contains the partial derivatives of the cost function with respect to each of the parameters $\theta$. We derive $\nabla J(\theta)$ as follows:
+
+$$
+\begin{equation}
+\begin{split}
+\frac{\partial}{\partial\theta_j}J(\theta)&=\frac{\partial}{\partial \theta_j}\bigg(\frac{1}{2m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2\bigg)\\
+\frac{\partial}{\partial\theta_j}J(\theta)&=\frac{1}{2m}\displaystyle\sum_{i=1}^m\frac{\partial}{\partial \theta_j}(h_\theta(x^{(i)})-y^{(i)})^2\hspace{50mm}\text{derivative of sum is sum of derivative}\\
+\frac{\partial}{\partial\theta_j}&=\frac{1}{2m}\displaystyle\sum_{i=1}^m2(h_\theta(x^{(i)})-y^{(i)})\frac{\partial}{\partial \theta_j}(h_\theta(x^{(i)})-y^{(i)})\hspace{22mm}\text{power+chain rule}\\
+\frac{\partial}{\partial\theta_j}&=\frac{1}{2m}\displaystyle\sum_{i=1}^m2(h_\theta(x^{(i)})-y^{(i)})\frac{\partial}{\partial \theta_j}(\displaystyle\sum_{j=0}^n\theta_j^Tx_j^{(i)}-y^{(i)})\hspace{17mm}\text{substituting}\space \theta^Tx\\
+\nabla J_\theta&=\frac{\partial}{\partial\theta_j}=\frac{1}{m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})x_j^{(i)}\space(\text{for every j})\hspace{19mm}\text{power rule+algebraic simplification}
+\end{split}
+\end{equation}
+$$
+Again, this formulation assumes that we have included a bias term $x_0=1$ 
+
+
+### Linear Regression with Gradient Descent Parameter Update Rule
+Now that we have our gradient, we can iteratively apply the least mean squares (LMS) update rule.
+$$
+\theta_j := \theta_j-\alpha\nabla J_\theta
+$$
+The LMS update rule has several properties that seem natural. For instance, we update the parameters $\theta$ by *subtracting* the scaled gradient in order to move in the direction of steepest *descent*. In addition, the magnitude of the update is proportional to the **error** term $h_\theta(x^{(i)})-y^{(i)}$. If we encounter large errors in our training batch, the magnitude of the gradient is higher resulting in a larger change to the parameters $\theta$. On the other hand, if our predictions are close to the true values $y$, our error term is smaller, resulting in smaller changes to the parameters. Lastly, Gradient Descent can be susceptible to local minima; however, the error manifold for the linear regression cost function is convex and as such, has only a single global minimum.
+
+
+### Linear Regression Model Summary
+To summarize, the linear regression model representation is:
+$$
+\begin{equation}
+\begin{split}
+\text{Hypothesis Function}\hspace{30mm}&h_\theta(x)=\theta^Tx\\
+\text{Cost Function}\hspace{30mm}&J(\theta)=\frac{1}{2m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2\\
+\text{Gradient}\hspace{30mm}&\nabla{J\theta}=\frac{1}{m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})x_j^{(i)}\space(\text{for every j})\\
+\text{Parameter Update Rule}\hspace{30mm}&\theta_j := \theta_j-\alpha\nabla J_\theta
+\end{split}
+\end{equation}
+$$
+
+## Design 
+Before we dive into code, let's align ourselves on a few design principlesthat will support current requirements as well as future enhancements. 
+
+### Design Principles     
+* **Separation of Concerns**. The model is designed to be a cooperation between cohesive and loosely coupled, and fully configurable modules that can be easily plugged together. Metrics, cost functions and their gradients, and enhancements such as learning rate schedules, early stopping regimes, and optimizers should be separate modules connected by an abstraction layer. 
+
+* **SOLID Foundation**. Adhere to proven principles of object-oriented programming. Ensure that a class does *one* thing, hopefully well. Classes can be extended without affecting existing functionality. Separate interfaces, such as Linear Regression, Ridge Regression, Logistic Regression from estimation. We should be able to replace an object with its subtype without affecting the code. Implementation depends upon abstractions, not the other way around.
+
+* **Extensibility**. Build for extensibility. We should be able to quickly design, integrate, and evaluate enhancements and innovations from the research community, and with minimal impact to existing structures. Code should be easy to read and modify. We must be able to support new requirements without causing new errors.   
+
+* **Interoperability**. The estimator should be scikit-learn compatible, and adhere to the scikit-larn interface and standards. The primary motivation is that we would like to use it together with the model evaluation and selection tolls such as [GridSearchCV](https://scikit-learn.org/dev/modules/generated/sklearn.model_selection.GridSearchCV.html#sklearn.model_selection.GridSearchCV) and [Pipeline](https://scikit-learn.org/dev/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline). As such, we will be inheriting from [BaseEstimator](https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html), [RegressorMixin](https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html), and ultimately [ClassifierMixin](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html).
+
+* **Borrow Good Ideas**. Leverage best practices, novel solutions to problems, creative approaches and ideas.  Good artists copy, great artists steal!
+
+
+### System Architecture
+With that, let's layout the key classes, entitities and their relationships.   
+![](./figures/ML Studio 1.0.png)
+`r kfigr::figr(label = "architecture", prefix = TRUE, link = TRUE, type="Figure")`: 
+The class diagram depicts 17 classes and 3 functions, organized into the following 5 groups. With this as a framework, we can forego the class specifications and start coding. Our agenda will be:         
+
+* Metrics (Green) - Classes responsible for computing various metrics.       
+* Cost (Blue) - Classes responsible for computing the cost and gradients of the cost.     
+* DataManager (Yellow) - Classes and functions used for data management and manipulation.    
+* Callbacks (White) - CallbackList and Callback base class as well as the History and Progress subclasses.    
+* Core classes (Orange) - Includes the Estimator base class and the Regression and Linear Regression subclasses.  
+
+## Build
+### Metrics 
+We'll begin with the metrics classes. We will be supporting:     
+* Mean Squared Error (MSE)     
+* Mean Absolute Error (MAE)     
+* Root Mean Squared Error (RMSE)
+
+

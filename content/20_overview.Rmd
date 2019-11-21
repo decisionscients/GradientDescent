@@ -14,7 +14,12 @@ formatNumber: function (n) {return ''+n}
 <center> `r kfigr::figr(label = "linear_search", prefix = TRUE, link = TRUE, type="Figure")`: Gradient Descent </center>
 
 
-This is section 1st of a _-part series,  Gradient Descent from Scratch. Gradient descent is among *the* most important algorithms in machine learning and is the defacto standard for optimizing deep learning networks. First introduced by Louis Augustin Cauchy in 1847 [@Cauchy1847Methode], Gradient Descent has evolved into a family of optimization algorithms and is now the workhorse behind state-of-the-art deep learning frameworks such as Keras [@chollet2015keras], TensorFlow [@tensorflow2015-whitepaper], Caffe [@jia2014caffe], Lasagne [@lasagne], and PyTorch [@paszke2017automatic], to name a few. 
+Gradient descent is among *the* most important algorithms in machine learning and is the defacto standard for optimizing deep learning networks. First introduced by Louis Augustin Cauchy in 1847 [@Cauchy1847Methode], Gradient Descent has evolved into a family of optimization algorithms and is now the workhorse behind state-of-the-art deep learning frameworks such as Keras [@chollet2015keras], TensorFlow [@tensorflow2015-whitepaper], Caffe [@jia2014caffe], Lasagne [@lasagne], and PyTorch [@paszke2017automatic], to name a few. 
+
+This is section 1st of a _-part series, Gradient Descent from Scratch. The goal of the series is to:    
+* Examine the fundamental principles of Gradient Descent,     
+* Build a Gradient Descent package in Python from scratch, and    
+* Explore the Gradient Descent's empirical behaviour through experimentation.  
 
 Our objective here is to explore the mathematical intuition behind Gradient Descent in order to understand how and why it really works. 
 

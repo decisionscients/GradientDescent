@@ -1,5 +1,5 @@
 # =========================================================================== #
-#                                 DATA                                        #
+#                            DATA MANAGER                                     #
 # =========================================================================== #
 #%%
 """Data manipulation functions."""
@@ -7,7 +7,6 @@
 from itertools import combinations_with_replacement
 from math import ceil
 import numpy as np
-import pandas as pd
 from sklearn.base import TransformerMixin, BaseEstimator
 
 # --------------------------------------------------------------------------- #
@@ -96,25 +95,31 @@ class StandardScaler(BaseEstimator, TransformerMixin):
         X = X * self.std_
         X = X + self.mean_
         return X
-
+        
 # --------------------------------------------------------------------------- #
 #                               FUNCTIONS                                     #
 # --------------------------------------------------------------------------- #
 def shuffle_data(X, y=None, seed=None):
     """ Random shuffle of the samples in X and y.
     
+    Shuffles data
+
     Parameters
     ----------
-    X : array-like, shape (n_samples, n_features)
-        X data to shuffle
+    X : array_like of shape (m, n_features)
+        Input data
 
-    y : array-like, shape (n_samples,)
-        y data to shuffle
+    y : array_like of shape (m,)
+        Target data    
 
-    Returns 
+    seed : int
+        Seed for reproducibility
+
+    Returns
     -------
-
-    """
+    Shuffled X, and y
+    
+    """    
     if seed:
         np.random.seed(seed)
     idx = np.arange(X.shape[0])
@@ -166,15 +171,8 @@ def data_split(X, y, test_size=0.3, shuffle=True, stratify=False, seed=None):
                          "X.shape[0]=y.shape[0] however X.shape[0] = %d "
                          " and y.shape[0] = %d." % (X.shape[0], y.shape[0]))
     if not stratify:
-        # Shuffle the data
         if shuffle:
-            if seed:
-                np.random.seed(seed)
-            idx = np.arange(X.shape[0])
-            np.random.shuffle(idx)
-            X = X[idx]
-            y = y[idx]
-        # Compute the index upon which to split, then slice.
+            X, y = shuffle_data(X, y, seed)
         split_i = len(y) - int(len(y) // (1 / test_size))
         X_train, X_test = X[:split_i], X[split_i:]
         y_train, y_test = y[:split_i], y[split_i:]
@@ -241,47 +239,3 @@ def batch_iterator(X, y=None, batch_size=None):
             yield X[i:i+batch_size], y[i:i+batch_size]
         else:
             yield X[i:i+batch_size]
-
-def one_hot(x, n_classes=None, dtype='float32'):
-    """Converts a vector of integers to one-hot encoding. 
-    
-    Creates a one-hot matrix for multi-class classification
-    and categorical cross_entropy.
-
-    Parameters
-    ----------
-    x : array-like of shape(n_observations,)
-        Vector of integers (from 0 to num_classes-1) to be converted to one-hot matrix.
-    n_classes : int
-        Number of classes
-    dtype : Data type to be expected, as a string
-        ('float32', 'float64', 'int32', ...)
-
-    Returns
-    -------
-    A binary one-hot matrix representation of the input. The classes axis
-    is placed last.
-    """
-    x = np.array(x, dtype='int')
-    if not n_classes:
-        n_classes = np.amax(x) + 1
-    one_hot = np.zeros((x.shape[0], n_classes))
-    one_hot[np.arange(x.shape[0]), x] = 1
-    return one_hot
-
-def decode(x, axis=1):
-    """Convert probability distributions to integers."""     
-    return np.argmax(x, axis=axis)
-
-def todf(x, stub):
-    """Converts nested array to dataframe."""
-    n = len(x[0])
-    df = pd.DataFrame()
-    for i in range(n):
-        colname = stub + str(i)
-        vec = [item[i] for item in x]
-        df_vec = pd.DataFrame(vec, columns=[colname])
-        df = pd.concat([df, df_vec], axis=1)
-    return(df)  
-
-#%%%

@@ -7,14 +7,55 @@ formatNumber: function (n) {return ''+n}
 }
 }});</script>
 
+<center>
+![Gradient Descent](../content/figures/convex_non_convex.jpg)
+</center>
+<center> `r kfigr::figr(label = "linear_search", prefix = TRUE, link = TRUE, type="Figure")`: Convex & Non-Convex Error Manifolds </center>
 
-There are three variants to Gradient Descent and they are:    
+
+Gradient descent is among *the* most important algorithms in machine learning and is the defacto standard for optimizing deep learning networks. First introduced by Louis Augustin Cauchy in 1847 [@Cauchy1847Methode], Gradient Descent has evolved into a family of optimization algorithms and is now the workhorse behind state-of-the-art deep learning frameworks such as Keras [@chollet2015keras], TensorFlow [@tensorflow2015-whitepaper], Caffe [@jia2014caffe], Lasagne [@lasagne], and PyTorch [@paszke2017automatic], to name a few. 
+
+This is section 2nd of a _-part series,  Gradient Descent from Scratch. The goal of the series is to:    
+* Examine the fundamental principles of Gradient Descent,     
+* Build a Gradient Descent package in Python from scratch, and    
+* Explore the Gradient Descent's empirical behaviour through experimentation.  
+
+In the prior section, we explored the mathematical intuition behind Gradient Descent. Our objective here is to evaluate the variants of Gradient Descent, specifically 
 
 * Batch Gradient Descent    
 * Stochastic Gradient Descent     
 * Mini-batch Gradient Descent      
 
-They are distinguished by the amount of data that is used to compute the gradient of the objective function, which affects the accuracy of the parameter updates, and the time complexity of the algorithm.
+The Gradient Descent variants are distinguished by the amount of data that are used to compute the gradient of the objective function, which affects the accuracy of the parameter updates, and the time complexity of the algorithm.
+
+However, before we analyze the various advantages and short-comings of the variants, let's review the benefits and drawbacks common to all variants.
+
+## Gradient Descent 
+### Pros
+* The primary benefit of Gradient Descent is computational complexity. For many machine learning problems, Gradient Descent is a computationally efficient alternative to analytical methods which involve normal equations and require matrix decomposition techniques such as QR matrix decomposition and Singular-Value Decomposition (SVD)    
+* Simple algorithm that is easy to implement 
+* Can be fast for smooth objective functions, i.e. well-conditioned and strongly convex    
+
+### Cons  
+* Cannot handle non-differentiable objective functions   
+* Since many objective functions are not strongly convex, convergence rate of Gradient Descent can be slow - on the order of $O(1/k)$ and is given by:
+
+$$f(x^k)-f(x^*) \le \frac{\|x^{(0)}-x^*\|^2}{2tk}$$
+* where:    
+  + t is the learning rate, and 
+  + k is the number of iterations
+  
+  + If $f$ is not strongly convex, this implies that in order to achieve a bound of $f(x^{(k)})-f(x^*)\le\epsilon$, we must run $O(1/\epsilon)$ iterations of Gradient Descent. We typically want accuracy in the order of $1e^{-5}$, which implies $10^5$ iterations. For some error manifolds, this could mean hours of training time or more.
+
+* All variants of Gradient Descent require learning rates that are carefully established. A learning rate that is too small may dramatically retard convergence and increase computational expense. Alternatively, a learning rate that is too high may result in a path that oscillates around the minimum or diverges from the minimum all together. This presents several challenges:   
+
+1. Identifying the optimal learning rate for the data set and objective function is often difficult     
+2. Establishing learning rate schedules that anneal the learning rate over time require that such schedules are pre-defined and as such, they do not adapt to the data.                 
+3. The same learning rates applies to all parameter updates. If parameters have different frequencies we may not want to update all the parameters in the same way [@Ruder2016].    
+
+* For non-convex error manifolds, Gradient Descent may get stuck in suboptimal minima or on saddle points. These stationary points, which occur when the gradient is at or near zero, are notoriously difficult to escape.
+
+That said, let's examine each of the variants, one by one.
 
 ## Batch Gradient Descent
 Batch Gradient Descent (BGD) computes the gradient of the objective function with respect to the parameters $\theta$ using the *entire* training set in a single batch.  
@@ -39,6 +80,7 @@ First, we randomly initialize the parameters $\theta$. Then, for a designated nu
 * Each update requires every example, even though some examples may be redundant, contributing little to the gradient.       
 * Renders a stable error gradient which is unable to escape saddle points and sub-optimal local minima for non-convex error surfaces.   
 * The entire training set must be memory resident, which becomes intractable for very large training sets.    
+* Very large datasets may take too long to process all the training samples.     
 
 ## Stochastic Gradient Descent
 Stochastic Gradient Descent (SGD), in contrast to batch Gradient Descent, computes the parameter update for *each* training example.
@@ -51,12 +93,14 @@ for i in range(epochs):
     gradient = compute_gradient(loss_function, example, theta)
     theta = theta - learning_rate * gradient
 ```
-The SGD algorithm differs from batch Gradient Descent in two respects. First, we shuffle the data at the beginning of each epoch to avoid cycles in the learning process. Second, the gradient computation and parameter updates occur within an inner loop that iterates over each example.
+First, we shuffle the data at the beginning of each epoch to avoid cycles in the learning process. Second, the gradient computation and parameter updates occur within an inner loop that iterates over each example.
 
 ### Pros
 * Greater computation and memory efficiency since each update is based upon just a single example. This computational efficiency is often leveraged by performing many more iterations of SGD than would be performed using batch Gradient Descent.
 * Large datasets tend to train faster with SGD than with BGD, due to higher frequency parameter updates.     
 * For non-convex error manifolds, SGD tends to produce better results than those of BGD. The SGD optimization path is characterized by greater noise and volatility. This additional energy can enable Gradient Descent to escape saddle points and suboptimal local minima.    
+* Large datasets can be trained with high memory efficiency, since only a single example is being processed at a time.    
+* SGD tends to have better generalization performance for large-scale problems (i.e. those constrained by computation time and not data availability). This is because SGD can process more examples within the available computation time.   
 
 ### Cons   
 * Processing a single example at a time loses the computational advantages of vectorized and parallelized operations.    
@@ -78,13 +122,32 @@ As with Stochastic Gradient Descent, we shuffle the data, then iterate through a
 
 ### Pros
 * With smaller batch sizes, mini-batch Gradient Descent can make problems involving large datasets more computationally tractable than they would otherwise be with batch Gradient Descent.   
-* Mini-batch Gradient Descent can produce gradient estimates as good as (or no worse than) the gradient estimates from batch Gradient Descent. The full training set is likely to include noise, outliers, and redundant samples. Recall that the training set is an *approximation* of a true data generating distribution and is likely to include noise, outliers, and redundant samples. Any randomly sampled mini-batch may reflect the *true* data generating distribution as effectively as the full training set. Averaging over several iterations of the mini-batch Gradient Descent can produce better gradient estimates than those computed from a full batch.     
-* Mini-batch gradients combine the stability of batch Gradient Descent with the noise of stochastic Gradient Descent. As such, it produces a lower-variance gradient with enough noise to escape local minima of non-convex error surfaces.  
-* Mini-batch Gradient Descent can produce models with acceptable generalization error faster than batch and stochastic Gradient Descent. Larger batch sizes (>1) reduce the variance of stochastic updates by taking the average of the gradient over the mini-batch. This allows one to take larger steps towards the optimum. The computational benefit comes from the fact that a large mini-batch is trivial to parallelized on a GPU, multiple GPUs or multiple machines.  With smaller batch sizes (<m), mini-batch Gradient Descent allows one to iterate over the error surface faster than with batch Gradient Descent. As stated above, average gradients over a mini-batch oftentimes approximate the true data generating distribution as well as batch gradient does.
+* Mini-batch Gradient Descent can produce gradient estimates as good as (or no worse than) the gradient estimates from batch Gradient Descent. Recall that the training set is an *approximation* of a true data generating distribution and is likely to include noise, outliers, and redundant samples. Any randomly sampled mini-batch may reflect the *true* data generating distribution as effectively as the full training set. Averaging over several iterations of the mini-batch Gradient Descent can produce better gradient estimates than those computed from a full batch.     
+* Mini-batch gradients combine the stability of batch Gradient Descent with the noise of Stochastic Gradient Descent. As such, it produces a lower-variance gradient with enough noise to escape local minima of non-convex error surfaces.  
+* Mini-batch Gradient Descent can produce models with acceptable generalization error faster than Batch and Stochastic Gradient Descent. Larger batch sizes (>1) reduce the variance of stochastic updates by taking the average of the gradient over the mini-batch. This allows one to take larger steps towards the optimum. The computational benefit comes from the fact that a large mini-batch is trivial to parallelized on a GPU, multiple GPUs or multiple machines.  With smaller batch sizes (<m), mini-batch Gradient Descent allows one to iterate over the error surface faster than with batch Gradient Descent. As stated above, average gradients over a mini-batch oftentimes approximate the true data generating distribution as well as batch gradient does.
 
 ### Cons    
-* Mini-batch Gradient Descent requires careful tuning of batch size and learning rate. Large batch sizes allows one to use larger learning rates, up to an algorithmic, problem specific upper bound which depends on the smoothness of the objective function. (The theoretical limit is typically 1/L, where L is the Lipschitz constant of the "full" gradient). 
+* Mini-batch Gradient Descent requires careful tuning of batch size and learning rate. Large batch sizes allow one to use larger learning rates, up to an algorithmic, problem specific upper bound which depends on the smoothness of the objective function. (The theoretical limit is typically 1/L, where L is the Lipschitz constant of the "full" gradient).   
 * Mini-batch Gradient Descent applies the same learning rate to every gradient update. As the gradient approaches its optimum, smaller learning rates are often needed. In such situations, one may consider increasing the batch size rather than reducing the learning rate for improved parallelism.  
 
-## Key-Take-aways
-1. The three variants, Batch Gradient Descent, Stochastic Gradient Descent and Mini-batch Gradient Descent differ largely in the amount of data used to compute the gradients and to perform the gradient updates.  
+## Which Variant to Use?
+As we have seen, each variant has its own advantages and disadvantages. It may be difficult to choose which variant to use, and sometimes one of the variants works better for a certain problem than does another. In general SGD is a good learning algorithm when the training set is large.
+
+That said, the "No Free Lunch" (NFL) theorems establish that "for any algorithm, any elevated performance over one class of problems is offset by performance over another class [@Wolpert1997a]. In other words, when averaged over all possible problems, no algorithm will perform better than all others. The NFL of Optimization broadly states that no optimizer is the best for all possible problems.
+
+Though, some argue that there are classes of objective functions for which NFL does not apply [@Mcgregor2006], it is usually well advised to experiment with a range of algorithms and hyperparameter settings to see how they behave. However, in order to choose an algorithm for a problem you may consider aspects such as:      
+* the dimension of the problem, high dimension means time consuming for most algorithms,      
+* complexity of objective function call, some algorithms needs to call the fitness value again and again,     
+* the behavior of the objective function - if known. Nonconvex may result in local minima traps,    
+* the degree of accuracy you want for your solution,        
+* available computation resources and desired computational complexity,     
+* available time and desired time complexity       
+
+Thank you for your time and attention. Please feel free to comment on anything that is ommitted, misleading or unclear. I hope this post was illuminating.
+
+In the next post of the series, we will build a Gradient Descent optimizer for Linear Regression.
+
+
+Review https://www.microsoft.com/en-us/research/wp-content/uploads/2012/01/tricks-2012.pdf for stuff.
+http://tongzhang-ml.org/papers/kdd14.pdf
+https://medium.com/mini-distill/effect-of-batch-size-on-training-dynamics-21c14f7a716e

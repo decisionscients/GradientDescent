@@ -64,7 +64,7 @@ sys.path.append(home)
 import numpy as np
 ```
 
-```{r child = '20_overview.Rmd'}
+```{r child = '40_linear_regression.Rmd'}
 ```
 
 

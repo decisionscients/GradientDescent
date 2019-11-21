@@ -1,42 +1,36 @@
 # =========================================================================== #
-#                          GRADIENT DESCENT CLASS                             #
+#                             ESTIMATOR CLASS                                 #
 # =========================================================================== #
-"""Regression classes."""
+"""Gradient Descent base class, from which regression and classification inherit."""
 from abc import ABC, abstractmethod, ABCMeta
 import datetime
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.base import RegressorMixin
-from sklearn.utils import shuffle
 import warnings
 
-from ml_studio.utils.data_manager import batch_iterator, data_split
-from ml_studio.supervised_learning.training.callbacks import CallbackList, Callback
-from ml_studio.supervised_learning.training.monitor import History, Progress
-from ml_studio.supervised_learning.training.learning_rate_schedules import LearningRateSchedule
-from ml_studio.supervised_learning.training.early_stop import EarlyStop
-
-from ml_studio.supervised_learning.training import reports
+from gradient_descent.v1_linear_regression.data_manager import batch_iterator, data_split, shuffle_data
+from gradient_descent.v1_linear_regression.callbacks import CallbackList, Callback
+from gradient_descent.v1_linear_regression.monitor import History, Progress
+from gradient_descent.v1_linear_regression import reports
 
 # --------------------------------------------------------------------------- #
 
-class GradientDescent(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
+class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
     """Base class gradient descent estimator."""
 
     DEFAULT_METRIC = 'mean_squared_error'
 
     def __init__(self, learning_rate=0.01, batch_size=None, theta_init=None, 
                  epochs=1000, cost='quadratic', metric='mean_squared_error', 
-                 early_stop=None, verbose=False, 
-                 checkpoint=100, name=None, seed=None):
+                 verbose=False, checkpoint=100, name=None, seed=None):
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.theta_init = theta_init
         self.epochs = epochs
         self.cost = cost
         self.metric = metric
-        self.early_stop = early_stop
         self.verbose = verbose
         self.checkpoint = checkpoint
         self.name = name
@@ -50,8 +44,6 @@ class GradientDescent(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         self.cost_function = None
         self.cbks = None
         self.X = self.y = self.X_val = self.y_val = None
-        self.regularizer = lambda x: 0
-        self.regularizer.gradient = lambda x: 0
         self.algorithm = None
         # Attributes
         self.coef_ = None
@@ -79,8 +71,6 @@ class GradientDescent(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
 
     def _validate_params(self):
         """Validate parameters."""
-        if not isinstance(self.learning_rate, (int, float, LearningRateSchedule)):
-            raise TypeError("learning_rate must provide an int, float or a LearningRateSchedule object.")
         if self.batch_size is not None:
             if not isinstance(self.batch_size, int):
                 raise TypeError("batch_size must provide an integer.")            
@@ -89,9 +79,6 @@ class GradientDescent(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
                 raise TypeError("theta must be an array like object.")            
         if not isinstance(self.epochs, int):
             raise TypeError("epochs must be an integer.")        
-        if self.early_stop:
-            if not isinstance(self.early_stop, EarlyStop):
-                raise TypeError("early stop is not a valid EarlyStop callable.")
         if self.metric is not None:
             if not isinstance(self.metric, str):
                 raise TypeError("metric must be string containing name of metric for scoring")                
@@ -119,7 +106,7 @@ class GradientDescent(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
             if not isinstance(y, (np.ndarray)):
                 raise TypeError("y must be of type np.ndarray")            
             if len(y.shape) > 1:
-                raise ValueError("y should be of shape (m,) or (m,n_classes), not %s" % str(y.shape))
+                raise ValueError("y should be of shape (m,), not %s" % str(y.shape))
             if X.shape[0] != y.shape[0]:
                 raise ValueError("X and y have incompatible lengths")        
 
@@ -129,22 +116,11 @@ class GradientDescent(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         # Add a column of ones to train the intercept term
         self.X = np.insert(X, 0, 1, axis=1)  
         self.y = y
-        # Set aside val_size training observations for validation set 
-        if self.early_stop:
-            if self.early_stop.val_size:
-                self.X, self.X_val, self.y, self.y_val = \
-                    data_split(self.X, self.y, 
-                    test_size=self.early_stop.val_size, seed=self.seed)
         self.n_features_ = self.X.shape[1]
 
     def _evaluate_epoch(self, log=None):
         """Computes training (and validation) costs and scores."""
         log = log or {}
-        # First determine whether validation metrics will be computed
-        val_metrics = False
-        if self.early_stop:
-            if self.early_stop.val_size:
-                val_metrics = True
         # Update log with current learning rate and parameters theta
         log['epoch'] = self.epoch
         log['learning_rate'] = self.eta
@@ -152,17 +128,11 @@ class GradientDescent(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         # Compute costs 
         y_pred = self._predict(self.X)
         log['train_cost'] = self.cost_function(y=self.y, y_pred=y_pred)
-        if val_metrics:
-            y_pred_val = self._predict(self.X_val)
-            log['val_cost'] = self.cost_function(y=self.y_val, y_pred=y_pred_val)        
         # Compute scores 
         if self.metric is not None:            
             log['train_score'] = self.score(self.X, self.y)
-            if val_metrics:
-                log['val_score'] = self.score(self.X_val, self.y_val)        
 
         return log
-
 
     @abstractmethod
     def _get_cost_function(self):
@@ -187,11 +157,6 @@ class GradientDescent(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         self.cbks.append(self.history)
         self.progress = Progress()        
         self.cbks.append(self.progress)
-        # Add additional callbacks if available
-        if isinstance(self.learning_rate, Callback):
-            self.cbks.append(self.learning_rate)
-        if isinstance(self.early_stop, Callback):
-            self.cbks.append(self.early_stop)
         # Initialize all callbacks.
         self.cbks.set_params(self.get_params())
         self.cbks.set_model(self)
@@ -210,12 +175,6 @@ class GradientDescent(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
             n_features = self.X.shape[1]
             np.random.seed(seed=self.seed)
             self.theta = np.random.normal(size=n_features).reshape(-1,1)
-
-    def _set_learning_rate(self):
-        if isinstance(self.learning_rate,float):
-            self.eta = self.learning_rate
-        else:
-            self.eta = self.learning_rate.learning_rate
 
     def _begin_training(self, log=None):
         """Performs initializations required at the beginning of training."""
@@ -241,7 +200,7 @@ class GradientDescent(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
     def _begin_epoch(self):
         """Increment the epoch count and shuffle the data."""
         self.epoch += 1
-        self.X, self.y = shuffle(self.X, self.y, random_state=self.seed)
+        self.X, self.y = shuffle_data(self.X, self.y, seed=self.seed)
         if self.seed:
             self.seed += 1
         self.cbks.on_epoch_begin(self.epoch)
@@ -289,13 +248,13 @@ class GradientDescent(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
                 y_pred = self._predict(X_batch)
                 # Compute costs
                 J = self.cost_function(
-                    y=y_batch, y_pred=y_pred) + self.regularizer(self.theta)
+                    y=y_batch, y_pred=y_pred)
                 # Update batch log with weights and cost
                 batch_log = {'batch': self.batch, 'batch_size': X_batch.shape[0],
                              'theta': self.theta.copy(), 'train_cost': J}
                 # Compute gradient and update weights
                 gradient = self.cost_function.gradient(
-                    X_batch, y_batch, y_pred) - self.regularizer.gradient(self.theta)
+                    X_batch, y_batch, y_pred) 
                 # Update parameters              
                 self.theta -= self.eta * gradient
                 # Update batch log
