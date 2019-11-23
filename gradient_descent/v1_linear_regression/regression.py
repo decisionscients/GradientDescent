@@ -122,4 +122,8 @@ class LinearRegression(Regression):
                                               metric=metric, early_stop=early_stop,
                                               verbose=verbose,
                                               checkpoint=checkpoint, name=name, seed=seed)
+    def _set_name(self):
+        self._set_algorithm_name()
+        self.task = "Linear Regression"
+        self.name = self.name or self.task + ' with ' + self.algorithm                                              
 

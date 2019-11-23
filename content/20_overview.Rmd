@@ -441,7 +441,7 @@ While $\nabla J(\theta) != 0$
 #### Learning Rate
 Each step in Gradient Descent is scaled by a value called the step size, or learning rate $\alpha$. 
 <center>
-![Learning Rates](../content/figures/learningrates.jpeg)
+![Learning Rates](../content/figures/learning_rates.png)
 </center>
 
 <center>Image by [Andrej Karpathy](http://cs231n.github.io/neural-networks-3/)</center>

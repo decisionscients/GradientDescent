@@ -351,7 +351,7 @@ pytest.main(["-m", "cost"])
 ```
 Boom! Cost done!
 
-### Callbacks
+### Monitor Training Progress
 Borrowing ideas is a cardinal design principle, not only for software engineering, but for life in general. Full disclosure. I totally swiped the callback concept from the people at Keras. It’s an elegant approach to organizing and managing functions that are applied at various stages of the training process. Callbacks can be used to view internal states, compute and report statistics, or manipulate the model itself. (The Callback and CallbackList classes can be obtained from [ML Studio]()https://github.com/decisionscients/ml-studio/blob/master/ml_studio/supervised_learning/training/callbacks.py)
 
 We will be using the concept of the callback to track history and to report progress during the training process.
@@ -372,11 +372,7 @@ The epoch log contains statistics obtained each epoch, such as training cost, tr
 ```{python history, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/monitor.py')[12:73]}
 ```
 
-#### Progress
-The Progress class reports statistics at each 'checkpoint' epochs.
-
-```{python progress, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/monitor.py')[77:97]}
-```
+There is a Progress class and summary function that report statistics during training and end of training respectcively. They can be obtained at [ML Studio](https://github.com/decisionscients/ml-studio/blob/master/ml_studio/supervised_learning/training/monitor.py).
 
 ### Estimator
 The Estimator is a base class that performs the Batch, Stochastic, and Minibatch Gradient Descent optimization for regression, and ultimately classification problems. The algorithm performed is determined by the batch size, where:    
@@ -434,5 +430,107 @@ With that, let's build our Estimator class.
 The following method instantiates an object of the Estimator class.
 ```{python instantiation, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[23:50]}
 ```
-#### Model Name
-We've included a couple of methods to designate a default model name for reporting purposes. The default model name is 
+#### Validation
+Let's include a couple of methods to validate the parameters and data. 
+```{python validation, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[71:111]}
+```
+
+#### Prepare Data
+This method creates the design matrix for the input $X$ by adding a vector of ones in the $x_0$ position. This allows us to simplify the prediction calculation to the dot product of $X$ and the parameters $\theta$ without dealing with a separate bias parameter.
+```{python prepare_data, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[112:118]}
+```
+
+#### Compile
+The estimator will be obtaining the cost (and gradient) and scoring functions from Cost and Metrics class factories. The selection of cost and and scoring functions will be delegated to subclasses (such as Linear Regression), via abstract methods which will request the functions appropriate to the task.  
+```{python compile, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[131:145]}
+```
+
+#### Initialize Weights
+Here, we randomly initialize the parameters where $\theta\sim N(0,1)$.
+```{python init_weights, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[159:172]}
+```
+
+#### Initialize Callbacks
+Here, we initialize the History and Progress callbacks.
+```{python init_weights, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[146:157]}
+```
+The callbacks are added to the CallbackList object, then each callback is initialized with the parameters and a reference to the model.
+
+#### Set Parameters and Name
+In order to leverage scikit-learn's [GridSearchCV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html) and [Pipeline](https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html) classes, a set_params method is required to set the parameters of the estimator.  
+```{python set_params, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[65:70]}
+```
+
+In addition, let's include a couple of methods that will automatically assign a name to the model for reporting purposes. The name will take the format task + with + algorithm, e.g. Linear Regression with Stochastic Gradient Descent. Subclasses will specify the task.
+```{python set_name, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[51:64]}
+```
+
+#### Evaluate Epoch
+Training costs and training scores are computed at the end of each epoch.
+```{python eval_epoch, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[119:130]}
+```
+#### Begin Training
+This method performs all tasks required at the beginning of training. 
+```{python begin_training, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[173:184]}
+```
+As indicated, this method will call methods that validate the parameters and the data, prepares the design matrix, initializes the weights and callbacks, and compiles the cost and scoring functions.
+
+#### End Training
+Here, we call the on_train_end() methods on the callbacks and save the epochs, coefficient and intercept attributes.
+```{python end_training, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[185:191]}
+```
+
+#### Begin Epoch
+This method shuffles the data and calls the 'on_epoch_begin' method on the callbacks.
+```{python begin_epoch, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[192:199]}
+```
+
+#### End Epoch
+Here, we format all the data that we would like to track for each epoch. This obtains the training statistics via the '_evaluate_epoch' method. Finally, the 'on_epoch_end' methods are called on the callbacks.
+```{python end_epoch, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[200:211]}
+```
+
+#### Begin Batch
+Here, we invoke the 'on_batch_begin' methods on the callbacks.
+```{python begin_batch, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[212:215]}
+```
+
+#### End Batch
+Correspondingly, we invoke the 'on_batch_end' methods on the callbacks.
+```{python end_batch, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[216:218]}
+```
+
+#### Fit
+This is the driver method for the estimator. It begins by calling the 'begin_training' method, then iterates through the optimization process for a predetermined number of epochs. The batch iterator will return batches of the designated batch_size; however if batch_size is None, the entire training set is returned in a single batch. 
+
+Each iteration:  
+
+* computes the predictions for the batch    
+* calculates the cost so that it can be tracked at the batch level    
+* determines the gradient    
+* updates the parameters as a function of the gradient and the learning rate $\eta$    
+
+```{python fit, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[219:265]}
+```
+
+#### Prediction
+Here we have the methods used for prediction. The first, 'linear_prediction' computes the prediction as a linear combination of the inputs $X$ and the parameters $\theta$. The '_predict' and 'predict' methods are defined by subclasses to accommodate tasks requiring non-linear transformations of the linear predictions, e.g. sigmoid or softmax.
+
+The 'linear_prediction' method is used in two contexts.   
+
+1. Training Predictions - It computes a prediction on the formatted design matrix $X$ and takes the form $\hat{y}=X\cdot\theta$
+2. Test Set Predictions - Test sets are distinguished by the number of features in the dataset vis-a-vis the dimension of the parameters $\theta$. If the number of features doesn't match the length of the parameters $\theta$, it is assumed to be a validation or test set. Here the prediction takes the form $\hat{y}=\theta_0 + X\cdot\theta_{\{1..n\}}$.
+```{python predictions, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[266:284]}
+```
+
+#### Score
+The score function computes score for the designated metric. This abstract method delegates to subclasses in order to distinguish regression from classification metrics.
+```{python score, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[285:288]}
+```
+
+#### Summary
+Lastly, we have a method that summarizes the training process using the History object.
+```{python summary, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[289:291]}
+```
+
+Now, we can move onto the Regression and Linear Regression classes.

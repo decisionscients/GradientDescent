@@ -115,15 +115,10 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         # Add a column of ones to train the intercept term
         self.X = np.insert(X, 0, 1, axis=1)  
         self.y = y
-        self.n_features_ = self.X.shape[1] 
-
+        
     def _evaluate_epoch(self, log=None):
         """Computes training (and validation) costs and scores."""
         log = log or {}
-        # Update log with current learning rate and parameters theta
-        log['epoch'] = self.epoch
-        log['learning_rate'] = self.eta
-        log['theta'] = self.theta.copy()        
         # Compute costs 
         y_pred = self._predict(self.X)
         log['train_cost'] = self.cost_function(y=self.y, y_pred=y_pred)
@@ -185,7 +180,6 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         self._compile()
         self._init_callbacks()
         self.cbks.on_train_begin(log)
-        self._set_algorithm_name()
         self._set_name()
 
     def _end_training(self, log=None):
@@ -205,8 +199,13 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
 
     def _end_epoch(self, log=None):        
         """Performs end-of-epoch evaluation and scoring."""
+        log = log or {}
+        # Update log with current learning rate and parameters theta
+        log['epoch'] = self.epoch
+        log['learning_rate'] = self.eta
+        log['theta'] = self.theta.copy()        
         # Compute performance statistics for epoch and post to history
-        log = self._evaluate_epoch()
+        log = self._evaluate_epoch(log)
         # Call 'on_epoch_end' methods on callbacks.
         self.cbks.on_epoch_end(self.epoch, log)
 
@@ -235,7 +234,7 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         train_log = {'X': X, 'y': y}
         self._begin_training(train_log)
         
-        while (self.epoch < self.epochs and not self.converged):
+        while (self.epoch < self.epochs):
 
             self._begin_epoch()
 
@@ -250,7 +249,7 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
                 # Update batch log with weights and cost
                 batch_log = {'batch': self.batch, 'batch_size': X_batch.shape[0],
                              'theta': self.theta.copy(), 'train_cost': J}
-                # Compute gradient and update weights
+                # Compute gradient 
                 gradient = self.cost_function.gradient(
                     X_batch, y_batch, y_pred) 
                 # Update parameters              
