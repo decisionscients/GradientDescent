@@ -10,17 +10,15 @@ from sklearn.base import BaseEstimator
 from sklearn.base import RegressorMixin
 import warnings
 
-from gradient_descent.v1_linear_regression.data_manager import batch_iterator, data_split, shuffle_data
-from gradient_descent.v1_linear_regression.callbacks import CallbackList, Callback
-from gradient_descent.v1_linear_regression.monitor import History, Progress
-from gradient_descent.v1_linear_regression import reports
+from .data_manager import batch_iterator, data_split, shuffle_data
+from .callbacks import CallbackList, Callback
+from .monitor import History, Progress
+import reports
 
 # --------------------------------------------------------------------------- #
 
 class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
     """Base class gradient descent estimator."""
-
-    DEFAULT_METRIC = 'mean_squared_error'
 
     def __init__(self, learning_rate=0.01, batch_size=None, theta_init=None, 
                  epochs=1000, cost='quadratic', metric='mean_squared_error', 
@@ -61,6 +59,7 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
 
     @abstractmethod
     def _set_name(self):
+        """Subclasses will designate the name based upon the task."""
         pass
 
     def set_params(self, **kwargs):
@@ -111,12 +110,12 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
                 raise ValueError("X and y have incompatible lengths")        
 
     def _prepare_data(self, X, y):
-        """Prepares training (and validation) data."""
+        """Creates the X design matrix and saves data as attributes."""
         self.X = self.X_val = self.y = self.y_val = None
         # Add a column of ones to train the intercept term
         self.X = np.insert(X, 0, 1, axis=1)  
         self.y = y
-        self.n_features_ = self.X.shape[1]
+        self.n_features_ = self.X.shape[1] 
 
     def _evaluate_epoch(self, log=None):
         """Computes training (and validation) costs and scores."""
@@ -186,7 +185,6 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         self._compile()
         self._init_callbacks()
         self.cbks.on_train_begin(log)
-        self._set_learning_rate()
         self._set_algorithm_name()
         self._set_name()
 

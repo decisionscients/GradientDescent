@@ -4,7 +4,7 @@
 # =========================================================================== #
 """Module containing callbacks used to monitor training performance."""
 import datetime
-from gradient_descent.v1_linear_regression.callbacks import Callback
+from .callbacks import Callback
 
 # --------------------------------------------------------------------------- #
 #                             HISTORY CLASS                                   #

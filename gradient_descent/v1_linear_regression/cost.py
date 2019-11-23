@@ -83,3 +83,4 @@ class RegressionCostFactory():
 
         dispatcher = {'quadratic': Quadratic()}
         return(dispatcher.get(cost, False))
+

@@ -5,11 +5,11 @@
 from abc import abstractmethod
 import numpy as np
 
-from .gradient_descent import GradientDescent
-from ..operations.metrics import RegressionMetric
-from ..operations.metrics import RegressionMetrics
-from ..operations.cost import RegressionCostFunction
-from ..operations.cost import RegressionCostFunctions
+from .estimator import Estimator
+from .metrics import RegressionMetric
+from .metrics import RegressionMetricFactory
+from .cost import RegressionCostFunction
+from .cost import RegressionCostFactory
 
 import warnings
 
@@ -17,7 +17,7 @@ import warnings
 #                          REGRESSION CLASS                                   #
 # --------------------------------------------------------------------------- #
 
-class Regression(GradientDescent):
+class Regression(Estimator):
     """Base class for all regression classes."""
 
     DEFAULT_METRIC = 'mean_squared_error'
@@ -35,7 +35,7 @@ class Regression(GradientDescent):
 
     def _get_cost_function(self):
         """Obtains the cost function associated with the cost parameter."""
-        cost_function = RegressionCostFunctions()(cost=self.cost)
+        cost_function = RegressionCostFactory()(cost=self.cost)
         if not isinstance(cost_function, RegressionCostFunction):
             msg = str(self.cost) + ' is not a supported regression cost function.'
             raise ValueError(msg)
@@ -44,7 +44,7 @@ class Regression(GradientDescent):
 
     def _get_scorer(self):
         """Obtains the scoring function associated with the metric parameter."""
-        scorer = RegressionMetrics()(metric=self.metric)
+        scorer = RegressionMetricFactory()(metric=self.metric)
         if not isinstance(scorer, RegressionMetric):
             msg = str(self.metric) + ' is not a supported regression metric.'
             raise ValueError(msg)
@@ -99,7 +99,7 @@ class Regression(GradientDescent):
         if self.metric:
             score = self.scorer(y=y, y_pred=y_pred)    
         else:
-            score = RegressionMetrics()(metric=self.DEFAULT_METRIC)(y=y, y_pred=y_pred)        
+            score = RegressionMetricFactory()(metric=self.DEFAULT_METRIC)(y=y, y_pred=y_pred)        
         return score
 
 # --------------------------------------------------------------------------- #

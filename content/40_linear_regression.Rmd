@@ -266,20 +266,173 @@ Before we dive into code, let's align ourselves on a few design principlesthat w
 ### System Architecture
 With that, let's layout the key classes, entitities and their relationships.   
 ![](./figures/ML Studio 1.0.png)
-`r kfigr::figr(label = "architecture", prefix = TRUE, link = TRUE, type="Figure")`: 
-The class diagram depicts 17 classes and 3 functions, organized into the following 5 groups. With this as a framework, we can forego the class specifications and start coding. Our agenda will be:         
 
-* Metrics (Green) - Classes responsible for computing various metrics.       
+`r kfigr::figr(label = "architecture", prefix = TRUE, link = TRUE, type="Figure")`: 
+The class diagram depicts 17 classes and 3 functions, organized into the following 5 groups.    
+
+* Core classes (Orange) - Includes the Estimator base class and the Regression and Linear Regression subclasses.  
 * Cost (Blue) - Classes responsible for computing the cost and gradients of the cost.     
+* Metrics (Green) - Classes responsible for computing various metrics.       
 * DataManager (Yellow) - Classes and functions used for data management and manipulation.    
 * Callbacks (White) - CallbackList and Callback base class as well as the History and Progress subclasses.    
-* Core classes (Orange) - Includes the Estimator base class and the Regression and Linear Regression subclasses.  
+
+We'll implement the core classes as well as the Cost, Metrics and Callback classes together. You may obtain the DataManager from [ML Studio](https://github.com/decisionscients/ml-studio/blob/master/ml_studio/utils/data_manager.py).
 
 ## Build
 ### Metrics 
 We'll begin with the metrics classes. We will be supporting:     
-* Mean Squared Error (MSE)     
-* Mean Absolute Error (MAE)     
-* Root Mean Squared Error (RMSE)
+* Mean Squared Error $\text{MSE}=\frac{1}{m}\displaystyle\sum_{i=1}^m(y_i-\hat{y_i})^2$     
+* Mean Absolute Error $\text{MAE}=\frac{1}{m}\displaystyle\sum_{i=1}^m(y_i-\hat{y_i})$          
+* Root Mean Squared Error $\text{RMSE}=\sqrt{\frac{1}{m}\displaystyle\sum_{i=1}^m(y_i-\hat{y_i})^2}$     
 
+We'd like to separate regression metrics from classification metrics for validation purposes, so let's create some Abstract Base Classes to separate these computations. 
 
+```{python metrics_base, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/metrics.py')[4:34]}
+```
+
+#### Mean Squared Error
+```{python metrics_mse, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/metrics.py')[56:72]}
+```
+#### Mean Absolute Error
+```{python metrics_mae, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/metrics.py')[38:54]}
+```
+#### Root Mean Squared Error
+```{python metrics_rmse, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/metrics.py')[73:89]}
+```
+The Metrics classes have attributes that should probably be explained. Future releases will include early stopping functionality that will compare values of metrics between epochs to measure performance. Those attributes simplify the process of evaluating the metrics.
+
+Lastly, we'll introduce a factory class to return the requested RegressionMetric object.
+```{python metrics_rmse, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/metrics.py')[90:99]}
+```
+
+Before we move on, let's make sure the Metrics classes work as intended. Let's mock up some test data.
+```{python metrics_test_data, eval=F, echo=T, code=readLines('../conftest.py')[4:16]}
+```
+Ok, let's bang up a pytest test class. 
+
+```{python metrics_test_data, eval=F, echo=T, code=readLines('../tests/test_metrics.py')[5:34]}
+```
+
+```{python metrics_test_results, eval=T, echo=T}
+pytest.main(["-m", "metrics"])
+```
+
+Ok, solid on the metrics.  Let's move on to the Cost class.
+
+### Cost
+Again, we would like to separate regression and classification cost functions, so let's lay down some Abstract Base Classes.  
+```{python metrics_base, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/cost.py')[4:31]}
+```
+Recall, our cost function and its gradient are defined as:     
+$$
+\begin{equation}
+\begin{split}
+\text{Cost Function}\hspace{30mm}&J(\theta)=\frac{1}{2m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2\\
+\text{Gradient}\hspace{30mm}&\nabla{J\theta}=\frac{1}{m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})x_j^{(i)}\space(\text{for every j})\\
+\end{split}
+\end{equation}
+$$
+
+We'll expose a __call__ method for the cost computation and a gradient method.
+```{python metrics_base, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/cost.py')[59:78]}
+```
+Next, we'll expose a factory to return the requested Cost class object. This will give us the flexibility to introduce other cost functions.
+```{python metrics_base, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/cost.py')[79:86]}
+```
+To test the Cost class, we've fabricated some test data and expected results in excel. Let's load it in.
+```{python cost_test_data, eval=F, echo=T, code=readLines('../conftest.py')[17:23]}
+```
+Let's run the test class.
+```{python cost_test, eval=F, echo=T, code=readLines('../tests/test_cost.py')[5:25]}
+```
+OK, what do we have?
+```{python cost_test_results, eval=T, echo=T}
+pytest.main(["-m", "cost"])
+```
+Boom! Cost done!
+
+### Callbacks
+Borrowing ideas is a cardinal design principle, not only for software engineering, but for life in general. Full disclosure. I totally swiped the callback concept from the people at Keras. It’s an elegant approach to organizing and managing functions that are applied at various stages of the training process. Callbacks can be used to view internal states, compute and report statistics, or manipulate the model itself. (The Callback and CallbackList classes can be obtained from [ML Studio]()https://github.com/decisionscients/ml-studio/blob/master/ml_studio/supervised_learning/training/callbacks.py)
+
+We will be using the concept of the callback to track history and to report progress during the training process.
+
+#### History
+The History class tracks data and statistics obtained during the training process. attributes include:       
+
+* total_epochs
+* total_batches
+* start_time
+* end_time
+* duration
+* epoch log
+* batch log
+
+The epoch log contains statistics obtained each epoch, such as training cost, training scores, and if a early stopping is invoked, validation set statistics. The batch log includes the batch data, batch size, training cost and parameter data gathered each batch.
+
+```{python history, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/monitor.py')[12:73]}
+```
+
+#### Progress
+The Progress class reports statistics at each 'checkpoint' epochs.
+
+```{python progress, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/monitor.py')[77:97]}
+```
+
+### Estimator
+The Estimator is a base class that performs the Batch, Stochastic, and Minibatch Gradient Descent optimization for regression, and ultimately classification problems. The algorithm performed is determined by the batch size, where:    
+
+```{python algorithm_batch_size, eval=T, echo=F}
+df = pd.read_csv("./notes/algorithm_batch_size.csv")
+```
+
+```{r algorithm_batch_size_table, eval=T, echo=F, results='asis'}
+kable(py$df) %>%
+  kable_styling(bootstrap_options=c("striped", "hover", "condensed"), full_width=T)
+```
+The parameters are:     
+
+* **learning_rate**: The learning rate applied to the gradient for parameter updates. Defaults to 0.01.     
+* **batch_size**: The number of observations per batch. Defaults to None, where batch_size = total sample size    
+* **theta_init**: Initial values for the parameters. Defaults to None.    
+* **epochs**: The total number of epochs to execute.    
+* **cost**: A string indicating the cost function. Defaults to 'quadratic' for regression problems.    
+* **metric**: The metric used to evaluate performance. Defaults to 'mean_squared_error'. Also supports 'mean_absolute_error' and 'root_mean_squared_error'.      
+* **verbose**: Boolean parameter. If true, statistics are printed to standard out at designated points in the training process, specified by the checkpoint parameter. Defaults to False.                 
+* **checkpoint**: The frequency in epochs in which statistics are reported if verbose is True.    
+* **name**: String indicating the model name      
+* **seed**: Seed for reproducibility     
+
+The attributes are:
+
+* **coef_**: The coefficients learned by the model          
+* **intercept_**: The intercept learned by the model    
+* **epochs_**: The total number of epochs executed       
+
+The class exposes the following public methods:    
+
+* **_init_**: Instantiates an object of the Estimator class            
+* **fit(X,y)**: Learns the parameters that minimize the cost function 
+* **predict(X)**: Renders a prediction given the current (or final) parameters     
+* **score(X,y)**: Computes a score for a designated metric, based upon learned parameters     
+* **summary()**: Summarizes key model statistics     
+
+All methods (private and public) are summarized in `r kfigr::figr(label = "estimator_methods", prefix = TRUE, link = TRUE, type="Table")`.
+
+```{python estimator_class_methods, eval=T, echo=F}
+df = pd.read_excel("./notes/estimator class.xlsx", sheet_name="methods")
+```
+
+`r kfigr::figr(label = "estimator_methods", prefix = TRUE, link = TRUE, type="Table")`: Estimator Methods
+```{r estimator_class_methods_table, eval=T, echo=F, results='asis'}
+kable(py$df) %>%
+  kable_styling(bootstrap_options=c("striped", "hover", "condensed"), full_width=T)
+```
+
+With that, let's build our Estimator class.
+
+#### Instantiation
+The following method instantiates an object of the Estimator class.
+```{python instantiation, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[23:50]}
+```
+#### Model Name
+We've included a couple of methods to designate a default model name for reporting purposes. The default model name is 
