@@ -12,8 +12,8 @@ import warnings
 
 from .data_manager import batch_iterator, data_split, shuffle_data
 from .callbacks import CallbackList, Callback
-from .monitor import History, Progress
-import reports
+from .monitor import History, Progress, summary
+ 
 
 # --------------------------------------------------------------------------- #
 
@@ -287,4 +287,4 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         pass
 
     def summary(self):
-        reports.summary(self.history)
+        summary(self.history)

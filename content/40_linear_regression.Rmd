@@ -8,6 +8,7 @@ formatNumber: function (n) {return ''+n}
 }});</script>
 
 # Linear Regression with Gradient Descent from Scratch
+## Introduction
 This is section __ of a 6-part series on Gradient Descent. In prior sections, we examined the calculus behind Gradient Descent and explored the relative merits of the Gradient Descent variants: Batch Gradient Descent, Stochastic Gradient Descent and Minibatch Gradient Descent.
 
 During this section, we will design, build, and evaluate a Gradient Decent optimizer for Linear Regression.  Concretely, we will:  
@@ -26,7 +27,7 @@ The overall goal is to understand the basics of Gradient Descent and its variant
 
 At the end of this post, you will have a reasonably performant and well-written Gradient Descent optimizer, a custom laboratory, that you can explore and enhance with new innovations from the research community.    
 
-## Why implement machine learning algorithms from scratch?
+### Why implement machine learning algorithms from scratch?
 
 Why build machine learning algorithms from scratch when there is no dearth of highly optimized and tested open-source packages and frameworks that I can use out-of-the-box without a deep understanding of optimization methods, gradients and loss functions. Is the return worth the investment in time? 
 
@@ -46,18 +47,17 @@ Well, there are several reasons why building an algorithm from scratch may make 
 
 * **Experimentation** Once you've implemented a machine learning algorithm, you can perform studies to evaluate the predictive and computational performance of various parameters and new functionality. This can lead to new insights and discoveries for future implementations that you can contribute and promote.
 
-## Case Studies
+### Case Studies
 We will evaluate our optimizer on three datasets, each presenting a different optimization challenge in terms of number of features and overall database size. 
 
-### Boston Housing Dataset
+#### Boston Housing Dataset
 The Boston Housing Dataset contains information collected by the U.S Census Service concerning housing in the area of Boston Mass. The dataset was original published by by Harrison, D. and Rubinfeld, D.L. [@Harrison] in their 1978 study the use of housing market data to ascertain willingness ot pay for clean air. The dataset has been used extensively throughout the literature to benchmark algorithms. The dataset, with 506 observations and 13 real-valued features, was obtained from [scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_boston.html). Our task is to predict median housing prices based upon features such as per capita crima rate, average number of rooms per dwelling, pupil-teacher ratio, age of the homes and others. It is currently maintained by Carnegie Mellon University, where the [codebook](http://lib.stat.cmu.edu/datasets/boston) and data may be obtained.
 
-#### Evaluation Metric
 The evaluation metric for this case will be the root mean squared error (RMSE):
 $$\text{RMSE}(y)=\sqrt{\displaystyle\sum_{i=1}^m(y_i-\hat{y})^2}$$
 The performance benchmark is to be within the top 50 scores for the 2016 [Kaggle Boston Housing competition](https://www.kaggle.com/c/boston-housing/overview/evaluation). As of the time of this writing, the 50th score on the leaderboard was $\text{RMSE}=4.11517$.
 
-### Facebook Comment Volume Prediction
+#### Facebook Comment Volume Prediction
 The Facebook Comment Volume Prediction Dataset was obtained by Kamaljot Singh to study and model social network user activity patterns [@facebook]. The dataset contains 40949 observations of Facebook Pages, with  54 features such as:
 
 * Page popularity likes   
@@ -69,15 +69,14 @@ The Facebook Comment Volume Prediction Dataset was obtained by Kamaljot Singh to
 
 The task is to predict the number of comments in H hours (H is a given feature). The dataset was obtained from the [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/datasets/Facebook+Comment+Volume+Dataset)
 
-#### Evaluation Metrics
-We will be using the results of Singh's 2015 report[@facebook] as a performance benchmark. He used two metrics to evaluate performance of several models.
+We will be using the results of Singh's 2015 report[@facebook] as a performance benchmark. He used three metrics to evaluate performance of several models.
 
-##### Hits@10
+**Hits@10**
 The observations which were predicted to have the top 10 number of comments were counted among the observations that were the actual top 10 observations in terms of comments. This was the measurement of accuracy.
 
 Singh was able to achieve HITS@10 scores from $4.6\pm0.800$ to $6.4\pm1.200$.
 
-##### AUC@10
+**AUC@10**
 The Area Under the Receiver-Operator Curve (AUC), he considered the true top 10 blog pages receiving the hightest number of comments as positive. The AUC was computed as follows:
 $$\text{AUC}=\frac{T_p}{T_p+F_p}$$
 where:      
@@ -86,17 +85,16 @@ where:
 
 For Singh's experiments, AUC@10 scores ranged from $0.704\pm0.168$ to $0.878\pm0.085$.
 
-##### Computation Time
+**Computation Time**
 Training computation time in seconds was obtained for each of Singh's models. Times ranged from 6-145 seconds. 
 
-### Million Song Dataset (MSD) Year Dataset
+#### Million Song Dataset (MSD) Year Dataset
 The Million Song Dataset (MSD) [@Bertin-Mahieux2011] is a freely-available collection of audio features and metadata for a million contemporary popular music tracks. This is a subset of the MSD and contains audio features of songs with the year of the song. The purpose of this set is to predict the release year of a song from its audio features. Songs are mostly western, commercial tracks ranging from 1922 to 2011, with a peak in the year 2000s. There are 515,345 observations and 90 features. Among the 90 features, 12 are timbre averages and 78 are timbre covariance.
 
-#### Evaluation Metric
 The performance metric that we will use is mean squared error (MSE), defined as:
 $$\text{MSE}=\frac{1}{m}\displaystyle\sum_{i=1}^m(y_i-\hat{y}_i)^2$$
 
-## Linear Regression and Optimization 
+## Linear Regression Optimization Model
 Linear Regression is routinely used in business settings to evaluate trends, make estimates or forecasts, predict faults, and assess risk. It is used to generate insights into customer behvavior, reveal factors influencing profitability, and analyze marketing, pricing, sales, and promotional effectiveness. Predictive analytics, operational efficiency, and decision support, are among the many applications that make Linear Regression the most widely-used statistical technique, by far.
 
 Linear regression is the study of linear, additive relationships between variables. Given:
@@ -146,17 +144,17 @@ Regardless of the source, the hypothesis space is linear in the parameters  [@ha
 
 Each parameter $\theta_1, \theta_2, \dots, \theta_n$ is a real number, and is associated with one of the input features $x_1, x_2, \dots, x_n$. The parameter $\theta_j$ represents how important that input $x_j$ is to the hypothesis or prediction. The additional constant $\theta_0$, the bias term, is the prediction that the model would make if all the $x$'s were zero.
 
-## Linear Regression Cost Function
+### Linear Regression Cost Function
 Having defined our hypothesis space, our next step is to specify a *cost* function to measure a penalty when predicting $\hat{y}$ when the true value of the dependent variable is $y$. The overall cost is given by:
 $$J(\theta)=\frac{1}{2m}\displaystyle\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2$$
 This **quadratic** function, also known as the least squares or Mean Squared Error (MSE) cost function, is convex with a single global minimum, well suited for Gradient Descent optimization. Note that this is not actually the mean squared error formula. We've added the $\frac{1}{2}$ factor as a mathematical convenience when computing the gradient. Nonetheless, the $\frac{1}{2}$ factor doesn't affect the optimization problem. The parameters $\theta$ that minimize $MSE$ are the same as those that minimize $\frac{1}{2}MSE$.  
 
 There are several other cost functions used in regression settings, including Mean Squared Logarithmic Error Loss and Mean Absolute Error Loss, but the quadratic, Mean Squared Error (MSE) cost function is essentially the default for regression problems.  Why? It has to do with **maximum likelihood estimation (MLE)**. 
 
-### Maximum Likelihood Estimation (MLE)
+#### Maximum Likelihood Estimation (MLE)
 MLE is an approach for estimating the parameter or parameters $\theta$ of a model. Given a dependent variable $y=y_1, y_2,\dots, y_m$, a feature matrix $X_1, X_2,\dots, X_3$ and parameters $\theta$ and $\sigma^2$, MLE measures the propensity that the data was generated from the model. The parameter estimate, obtained by maximizing a **likelihood function** is called the maximum likelihood estimate $\hat{\theta}_{MLE}$ 
 
-#### Likelihood Function
+##### Likelihood Function
 Recall that our statistical model is defined as follows:    
 
 * The distribution of $X$ is arbitrary and perhaps non-random.     
@@ -369,7 +367,7 @@ The History class tracks data and statistics obtained during the training proces
 
 The epoch log contains statistics obtained each epoch, such as training cost, training scores, and if a early stopping is invoked, validation set statistics. The batch log includes the batch data, batch size, training cost and parameter data gathered each batch.
 
-```{python history, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/monitor.py')[12:73]}
+```{python history, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/monitor.py')[14:75]}
 ```
 
 There is a Progress class and summary function that report statistics during training and end of training respectcively. They can be obtained at [ML Studio](https://github.com/decisionscients/ml-studio/blob/master/ml_studio/supervised_learning/training/monitor.py).
@@ -425,6 +423,11 @@ kable(py$df) %>%
 ```
 
 With that, let's build our Estimator class.
+
+#### Preliminaries
+Let's start by importing necessary modules and defining our class.
+```{python preliminaries, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/estimator.py')[5:22]}
+```
 
 #### Instantiation
 The following method instantiates an object of the Estimator class.
@@ -534,3 +537,21 @@ Lastly, we have a method that summarizes the training process using the History 
 ```
 
 Now, we can move onto the Regression and Linear Regression classes.
+
+### Regression    
+The Regression class inherits from the Estimator class.  Looking ahead, we will be building, not only the Linear Regression capability, but Lasso, Ridge, and ElasticNet Regression facilities as well. Here, we abstract those methods common to all regression classes.
+```{python regression, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/regression.py')[5:104]}
+```
+
+Here, we've:   
+* obtained the cost function from the RegressionCostFactory    
+* designated the scoring function from the RegressionMetricFactory      
+* defined an private and public predict method that calls the 'linear_prediction' method in the base class   
+* specified a scoring function
+
+### Linear Regression
+The Linear Regression class inherits virtually all the required functionality from the Regression class. All that is remaining is to designate the name of the model for reporting purposes. 
+
+```{python linear_regression, eval=F, echo=T, code=readLines('../gradient_descent/v1_linear_regression/regression.py')[110:129]}
+```
+
