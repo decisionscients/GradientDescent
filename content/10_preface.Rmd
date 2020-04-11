@@ -1,45 +1,32 @@
 # Introduction
 Gradient descent is among *the* most important algorithms in machine learning and is the defacto standard for optimizing deep learning networks. First introduced by Louis Augustin Cauchy in 1847 [@Cauchy1847Methode], Gradient Descent has evolved into a family of optimization algorithms and is now the workhorse behind state-of-the-art deep learning frameworks such as Keras [@chollet2015keras], TensorFlow [@tensorflow2015-whitepaper], Caffe [@jia2014caffe], Lasagne [@lasagne], and PyTorch [@paszke2017automatic], to name a few. 
 
-In this __part series, we will build a custom, extensible, and modular Gradient Descent lab from the ground up. It will include gradient-based implementations of:
+During this series, we will:    
 
-* Linear Lasso, Ridge, and ElasticNet Regression,   
-* Logistic Regression, and    
-* Multinomial Logistic Regression 
+* Develop our intuition and command of gradient descent and the theory behind it.           
+* Build a custom, extensible, and modular Gradient Descent lab in Python from the ground up. 
+* Analyze gradient descent performance vis-a-vis its hyperparameters and variants. 
 
-Our package will support:    
-
-* Batch, Minibatch, and Stochastic Gradient Descent,   
-* regularization methods such as lasso, ridge, and elastic net regression    
-* learning rate decay schedules such as time, step, and exponential decay 
-* various early stopping approaches
-
-Once we have a working model, we will analyze and interpret the effects of various hyperparameter settings on algorithm performance, evaluate performance for real-world case studies, and compare our models with the [scikit-learn](https://scikit-learn.org/stable/)  [SGDRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html) and [SGDClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html) modules.
+By the close of this series you will have a performant, reliable, and extensible implementation that will support:    
+* Batch, minibatch, and stochastic gradient descent,    
+* Linear regression, logistic regression and softmax (multinomial) regression,    
+* Lasso, ridge, and elastic net regularization techniques
 
 ## Learning Objectives
-The overall goal is to understand Gradient Descent, its applications, and variants so that we can:  
+The overall goal is to understand gradient descent, its applications, and variants so that we can:  
 
 * Meet a wider range of real-world optimization challenges, independent of specific frameworks   
 * Customize and apply existing frameworks more effectively     
 * Create custom implementations of algorithms for learning, specialization, or experimentation purposes
 
-Over the coming sections, we will: 
+At the completion of this series, we should be able to:   
 
-* introduce Gradient Descent and evaluate the variants' strengths and weaknesses
-* explore the theory and mathematics behind gradient based optimization    
-* implement the three variants, batch, stochastic, and minibatch Gradient Descent     
-* develop linear regression, logistic regression, and multinomial classification modules     
-* analyze the effect of hyperparameters on algorithm behavior, performance, and speed         
-* apply the algorithm to a real-world linear regression, logistic regression and classification problem
-* evaluate its performance vis-a-vis that of the [scikit-learn](https://scikit-learn.org/stable/)  [SGDRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html) and [SGDClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html) modules.
-
-## Cases     
-Throughout this series, we will be using three of the most widely used datasets in machine learning.    
-* [Boston Housing Dataset (Regression)](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_boston.html)     
-* [Wisconson Breast Cancer Dataset (Binary Classification)](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html)    
-* [The Iris Dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html)
-
-Courtesy of the good folks at sckikit-learn, we can benchmark the performance of our implementations against those of other researchers and practitioners on the interwebs.
+* Contrast batch, minibatch, and stochastic gradient descent performance and behavior,     
+* Understand the mathematics and theory behind gradient descent,          
+* Assess the behavior and performance of gradient descent and its variants,    
+* Intuit and reason about hyperparameters and their effects on algorithm performance,    
+* Apply regularization techniques to linear regression, logistic regression, and softmax regression problems,  
+* Bolster your ability to develop modular, performant, and reliable machine learning algorithms
 
 ## Why implement machine learning algorithms from scratch?
 
@@ -61,17 +48,32 @@ Well, there are several reasons why building an algorithm from scratch may make 
 
 * **Experimentation** Once you've implemented a machine learning algorithm, you can perform studies to evaluate the predictive and computational performance of various parameters and new functionality. This can lead to new insights and discoveries for future implementations that you can contribute and promote.
 
-
 ## Organization
-This explanatory series is comprised of the following eight sections:    
 
-1. Introduction to Gradient Descent     
-2. Gradient Descent From Scratch I: Regression 
-2. Gradient Descent From Scratch II: Binary Classification 
-2. Gradient Descent From Scratch III: Multinomial Classification 
-3. Gradient Descent From Scratch IV: Learning Rate Schedules          
-4. Gradient Descent From Scratch V: Early Stopping                 
-5. Gradient Descent From Scratch VI: Optimization Algorithms            
+1. Context and Concepts    
+  * Introduction to Optimization      
+  * Gradient-Based Optimization
+  
+2. Linear Regression    
+  * Gradient descent for Linear Regression            
+  * Design and Implementation       
+  * Performance and Behavior Analysis
+  
+3. Logistic Regression    
+  * Gradient descent for Logistic Regression            
+  * Design and Implementation       
+  * Performance and Behavior Analysis  
+ 
+4. Softmax Regression    
+  * Gradient descent for Softmax Regression            
+  * Design and Implementation       
+  * Performance and Behavior Analysis
+  
+## Cases     
+Throughout this series, we will be using three of the most widely used datasets in machine learning.    
+* Part I - Linear Regression: [Boston Housing Dataset (Regression)](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_boston.html)     
+* Part II - Logistic Regression: [Wisconson Breast Cancer Dataset (Binary Classification)](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html)    
+* Part III - Softmax Regression: [The Iris Dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html)
 
 ## Prerequisites
 This series assumes the reader has a basic to intermediate facility with the Python programming language. You should also be familiar with the [Numpy](http://www.numpy.org/) and [Pandas](https://pandas.pydata.org/) libraries.  Exposure to the [scikit-learn](https://scikit-learn.org/stable/) library would be advantageous, but is not required. Some background in multivariate calculus is also useful but not required.

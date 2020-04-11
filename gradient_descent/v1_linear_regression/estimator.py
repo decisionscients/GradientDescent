@@ -13,15 +13,18 @@ import warnings
 from .data_manager import batch_iterator, data_split, shuffle_data
 from .callbacks import CallbackList, Callback
 from .monitor import History, Progress, summary
- 
-
+from .early_stop import EarlyStop
+from .early_stop import EarlyStopImprovement
 # --------------------------------------------------------------------------- #
 
 class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
     """Base class gradient descent estimator."""
 
+    DEFAULT_METRIC = 'mean_squared_error'
+
     def __init__(self, learning_rate=0.01, batch_size=None, theta_init=None, 
                  epochs=1000, cost='quadratic', metric='mean_squared_error', 
+                 early_stop=False, val_size=0.3, patience=5, precision=0.001,
                  verbose=False, checkpoint=100, name=None, seed=None):
         self.learning_rate = learning_rate
         self.batch_size = batch_size
@@ -29,6 +32,10 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         self.epochs = epochs
         self.cost = cost
         self.metric = metric
+        self.early_stop = early_stop
+        self.val_size = val_size
+        self.patience = patience
+        self.precision = precision
         self.verbose = verbose
         self.checkpoint = checkpoint
         self.name = name
@@ -38,11 +45,16 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         self.batch = 0
         self.converged = False
         self.theta = None
-        self.eta = None        
-        self.cost_function = None
+        self.eta = None                
         self.cbks = None
         self.X = self.y = self.X_val = self.y_val = None
+        self.regularizer = lambda x: 0
+        self.regularizer.gradient = lambda x: 0
         self.algorithm = None
+        # Functions
+        self.scorer = None
+        self.cost_function = None
+        self.convergence_monitor = None
         # Attributes
         self.coef_ = None
         self.intercept_ = None
@@ -59,7 +71,6 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
 
     @abstractmethod
     def _set_name(self):
-        """Subclasses will designate the name based upon the task."""
         pass
 
     def set_params(self, **kwargs):
@@ -78,6 +89,16 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
                 raise TypeError("theta must be an array like object.")            
         if not isinstance(self.epochs, int):
             raise TypeError("epochs must be an integer.")        
+        if self.early_stop:
+            if not isinstance(self.early_stop, (bool,EarlyStop)):
+                raise TypeError("early stop is not a valid EarlyStop callable.")
+        if self.early_stop:
+            if not isinstance(self.val_size, float) or self.val_size < 0 or self.val_size >= 1:
+                raise ValueError("val_size must be a float between 0 and 1.")
+        if not isinstance(self.patience, int):
+            raise ValueError("patience must be an integer")
+        if not isinstance(self.precision, float) or self.precision < 0 or self.precision >= 1:
+            raise ValueError("precision must be a float between 0 and 1.")            
         if self.metric is not None:
             if not isinstance(self.metric, str):
                 raise TypeError("metric must be string containing name of metric for scoring")                
@@ -115,33 +136,71 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         # Add a column of ones to train the intercept term
         self.X = np.insert(X, 0, 1, axis=1)  
         self.y = y
-        
+        # Set aside val_size training observations for validation set 
+        if self.val_size:
+            self.X, self.X_val, self.y, self.y_val = \
+                data_split(self.X, self.y, 
+                test_size=self.val_size, seed=self.seed)
+
     def _evaluate_epoch(self, log=None):
         """Computes training (and validation) costs and scores."""
         log = log or {}
         # Compute costs 
         y_pred = self._predict(self.X)
         log['train_cost'] = self.cost_function(y=self.y, y_pred=y_pred)
+        if self.val_size > 0 and self.early_stop:
+            y_pred_val = self._predict(self.X_val)
+            log['val_cost'] = self.cost_function(y=self.y_val, y_pred=y_pred_val)        
         # Compute scores 
         if self.metric is not None:            
             log['train_score'] = self.score(self.X, self.y)
+            if self.val_size > 0 and self.early_stop:
+                log['val_score'] = self.score(self.X_val, self.y_val)        
 
         return log
+
 
     @abstractmethod
     def _get_cost_function(self):
         """Obtains the cost function for the cost parameter."""
-        pass
+        raise NotImplementedError("This method is not implemented for "
+                                  "this Abstract Base Class.")
 
     @abstractmethod        
     def _get_scorer(self):
         """Obtains the scoring function for the metric parameter."""
-        pass
+        raise NotImplementedError("This method is not implemented for "
+                                  "this Abstract Base Class.")
+
+    def _get_convergence_monitor(self):
+        if isinstance(self.early_stop, EarlyStop):
+            convergence_monitor = self.early_stop
+        else:
+            if self.early_stop:
+                if self.metric:
+                    convergence_monitor = EarlyStopImprovement(metric='val_score',
+                                                              precision=self.precision,
+                                                              patience=self.patience)
+                else:
+                    convergence_monitor = EarlyStopImprovement(metric='val_cost',
+                                                              precision=self.precision,
+                                                              patience=self.patience)
+            else:
+                if self.metric:
+                    convergence_monitor = EarlyStopImprovement(metric='train_score',
+                                                              precision=self.precision,
+                                                              patience=self.patience)
+                else:
+                    convergence_monitor = EarlyStopImprovement(metric='train_cost',
+                                                              precision=self.precision,
+                                                              patience=self.patience)            
+        return convergence_monitor
 
     def _compile(self):
         """Obtains external objects and add key functions to the log."""
         self.cost_function = self._get_cost_function()
         self.scorer = self._get_scorer()        
+        self.convergence_monitor = self._get_convergence_monitor()
 
     def _init_callbacks(self):
         # Initialize callback list
@@ -151,6 +210,9 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         self.cbks.append(self.history)
         self.progress = Progress()        
         self.cbks.append(self.progress)
+        # Add additional callbacks if available
+        if isinstance(self.convergence_monitor, Callback):
+            self.cbks.append(self.convergence_monitor)
         # Initialize all callbacks.
         self.cbks.set_params(self.get_params())
         self.cbks.set_model(self)
@@ -170,17 +232,25 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
             np.random.seed(seed=self.seed)
             self.theta = np.random.normal(size=n_features).reshape(-1,1)
 
+    def _set_learning_rate(self):
+        if isinstance(self.learning_rate,float):
+            self.eta = self.learning_rate
+        else:
+            self.eta = self.learning_rate.learning_rate
+
     def _begin_training(self, log=None):
         """Performs initializations required at the beginning of training."""
         self.converged = False
         self._validate_params()
         self._validate_data(log.get('X'), log.get('y'))        
         self._prepare_data(log.get('X'), log.get('y'))
+        self._set_name()
         self._init_weights()   
         self._compile()
         self._init_callbacks()
         self.cbks.on_train_begin(log)
-        self._set_name()
+        self._set_learning_rate()
+        
 
     def _end_training(self, log=None):
         """Closes history callout and assign final and best weights."""
@@ -203,7 +273,7 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         # Update log with current learning rate and parameters theta
         log['epoch'] = self.epoch
         log['learning_rate'] = self.eta
-        log['theta'] = self.theta.copy()        
+        log['theta'] = self.theta.copy()     
         # Compute performance statistics for epoch and post to history
         log = self._evaluate_epoch(log)
         # Call 'on_epoch_end' methods on callbacks.
@@ -234,7 +304,7 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
         train_log = {'X': X, 'y': y}
         self._begin_training(train_log)
         
-        while (self.epoch < self.epochs):
+        while (self.epoch < self.epochs and not self.converged):
 
             self._begin_epoch()
 
@@ -245,13 +315,13 @@ class Estimator(ABC, BaseEstimator, RegressorMixin, metaclass=ABCMeta):
                 y_pred = self._predict(X_batch)
                 # Compute costs
                 J = self.cost_function(
-                    y=y_batch, y_pred=y_pred)
+                    y=y_batch, y_pred=y_pred) + self.regularizer(self.theta)
                 # Update batch log with weights and cost
                 batch_log = {'batch': self.batch, 'batch_size': X_batch.shape[0],
                              'theta': self.theta.copy(), 'train_cost': J}
                 # Compute gradient 
                 gradient = self.cost_function.gradient(
-                    X_batch, y_batch, y_pred) 
+                    X_batch, y_batch, y_pred) - self.regularizer.gradient(self.theta)
                 # Update parameters              
                 self.theta -= self.eta * gradient
                 # Update batch log

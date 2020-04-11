@@ -7,21 +7,110 @@ formatNumber: function (n) {return ''+n}
 }
 }});</script>
 
-# Gradient Descent
+# Gradient Descent Context and Concepts
 <center>
 ![Gradient Descent](../content/figures/gradient_descent.jpg)
 </center>
 <center> `r kfigr::figr(label = "linear_search", prefix = TRUE, link = TRUE, type="Figure")`: Gradient Descent </center>
 
+What is gradient descent? Why do we use it? How does it work?  Why does it work?  In this section, we address these essential questions and develop the main ideas behind gradient descent. Concretely, we will:   
+* Formalize the notion of a supervised learning problem,   
+* Contrast analytical and numerical methods for solving the problem,    
+* Define the gradient descent algorithm, and     
+* Walk through an example of gradient descent.
 
-Gradient descent is among *the* most important algorithms in machine learning and is the defacto standard for optimizing deep learning networks. First introduced by Louis Augustin Cauchy in 1847 [@Cauchy1847Methode], Gradient Descent has evolved into a family of optimization algorithms and is now the workhorse behind state-of-the-art deep learning frameworks such as Keras [@chollet2015keras], TensorFlow [@tensorflow2015-whitepaper], Caffe [@jia2014caffe], Lasagne [@lasagne], and PyTorch [@paszke2017automatic], to name a few. 
+By the close of this section, you will understand what gradient descent is, why we use it, and how and why it works so beautifully. 
 
-This is section 1st of a _-part series, Gradient Descent from Scratch. The goal of the series is to:    
-* Examine the fundamental principles of Gradient Descent,     
-* Build a Gradient Descent package in Python from scratch, and    
-* Explore the Gradient Descent's empirical behaviour through experimentation.  
+Ok, let's set the context.
 
-Our objective here is to explore the mathematical intuition behind Gradient Descent in order to understand how and why it really works. 
+## Supervised Learning Context
+Let's say that we are tasked with predicting home prices based upon features such as:   
+* size of the home in square feet,    
+* year it was built,   
+* the neighborhood,    
+* the number of bedrooms, 
+* the condition of the house, and so on...
+
+To do so, we are given a training set and a test set. Whereas the training set contains both the features and the prices, the test set contains only features. We use the 'labeled' training set to learn a function, a hypothesis function, which will enable us to 'accurately' predict housing prices in both the training and test sets.
+
+Our challenge is a supervised learning problem because the labeled data with home prices and features are available during the learning process. In unsupervised learning, we have only the features and our task is describe patterns or organization within the data. 
+
+
+
+
+
+For illustration purposes, let's restrict our feature set to the size of the home in square feet. We should now align on a bit of notation used in supervised learning settings.
+
+```{r notation_sl, results='asis'}
+tbl <- "
+|     Notation     |  Description |
+|------------------|:-----------------------------------------------------------------------|
+| $X$ | The set of training examples |
+| $y$ | The set of labeled target values, prices, for the training examples |
+| $n$ | The number of variables in X$ |
+| $m$ | The number of observations in X$ |
+| $(x^{(i)},y^{(i)})$ | The $i$-th example pair in X (supervised learning) |
+"
+cat(tbl)
+```
+
+So, our goal is to learn a function, a *hypothesis* function, $h:X\to y$, such that $h(x)$ is a good predictor for the corresponding value $y$. Let's say, as an initial choice, that $y$ can be approximated as a linear function of $X$ using:
+
+$$h_\theta(x)=\theta_0x_0+\theta_1x_1$$
+where:    
+* $x_0$ = 1 is the bias term (a convention to simplify our notation)     
+* $x_1$ = is the home size in square feet     
+* $\theta_0$ is the parameter for the bias term $x_0$           
+* $\theta_1$ is the parameter for the home size variable $x_1$         
+* $h_\theta(x)$ or more simply, $h(x)$, are our predictions.   
+
+We can simplify our notation so that
+$$h(x)=\displaystyle{\sum_{i=0}^n}\theta_ix_i=\theta^TX,$$
+where the $\theta$ and $x$ on the right side of the equation are both vectors and $n$ is the number of input variables$.
+
+Now, given $X$ how do we learn the parameters $\theta$? We must learn the $\theta$'s that make $h(x)$ as close to $y$ as possible, at least for our training examples. 
+
+There are two general approaches to solving $h(x)$ for $\theta$, analytical and numeric. Analytical methods use theorems to obtain formulas that can be mathematically solved to render exact solutions.  Numerical methods start with an initial guess at a solution, then iteratively refine and improve the estimate until some stopping criteria are met. We'll introduce analytical methods first, then numerical methods before diving into the algorithm details.
+
+## Analytical Methods
+Recall, our hypothesis is given by:   
+$$h(x)=\displaystyle{\sum_{i=0}^n}\theta_ix_i=\theta^TX,$$
+So, how do we analytically solve for the optimal $\theta$. **Ordinary least squares** (OLS), the most common method, minimizes the sum of the squared residuals and is given by the closed form **normal equation**:
+$$X^TX\theta=X^T\overrightarrow{y}$$
+Solving for our parameters $\theta$, we have:
+$$\theta=(X^TX)^{-1}X^T\overrightarrow{y},$$
+where $X \in \mathbb{R}^{m\times n}$ is the matrix of inputs and $\overrightarrow{y} \in \mathbb{R}^{m\times 1}$ is the vector of outputs.
+
+
+
+
+We're done! Right?  All there is to do is to plug in the $X$ and $\overrightarrow{y}$ into MATLAB, R or python, then
+click 'OK' to calculate. Not so fast! Two things.
+
+First, you may be waiting a while for your computation. Inverting an $n\times n$ matrix has a computational complexity of $O(n^3)$. If the number of features in the dataset is $n=10$, computing the inverse would take $10^3$ time. Increase to $n=100$, computation time would increase to $10^6$, a one-thousand fold increase. For small datasets, the analytical approach may be feasible, but analytical methods become computationally intractible with larger datasets very quickly.  
+
+Second, there are equations such as derivatives and integrals, that have no analytical solution, but can be computed using numerical methods quite efficiently. Numerical optimization methods allow us to solve problems with no known analytical solution or solutions that are too computationally expensive.
+
+## Numerical Optimization Methods
+Numerical optimization is an important tool in decision science and in machine learning. We use it when analytical solutions are not available or too computationally complex. Let's take a numerical approach to our prediction problem. 
+
+We've already defined out objective function in $\ref{cost}$. It depends upon parameters $\theta$ that may or may not be constrained. In machine learning, we call the process of identifying the objective, parameters, and constraints for a given problem, *modeling*. This is the first and most important step in the optimization process. An overly simplistic model will not produce any useful insights into the problem.  A highly complex model may be too difficult to solve. 
+
+Once the model has been formulated, an optimization algorithm can be used to find its solution. As the 'No Free Lunch' theorem states, there is no universal algorithm that will be effective on all problems and datasets. Rather, there are numerous algorithms, each of which is tailored to a particular type of optimization problem. The practitioner must choose an algorithm that is appropriate for her specific problem. 
+
+Numerical optimization algorithms generally fall into one of two categories: **gradient-based** and **non-gradient based**. 
+
+### Gradient Based Algorithms
+Gradient based algorithms require that the variables be unconstrained and that the continuous first (and possibly higher) derivatives of the objective function exist. Gradient-based methods converge faster than non-gradient based methods; however, convergence to a global minimum is not guaranteed.  
+
+### Non-Gradient Based Algorithms
+Non-gradient base methods rely only upon objective function evaluations to find optimum point. Some of the more popular non-gradient based algorithms include coordinate descent, Nelder-Mead simplex algorithm, Mesh-Adaptive Directive Search (MADS). Unlike gradient-based methods, non-gradient methods may find a global minimum but they require a large number of design cycles to converge. 
+
+After an optimization algorithm has been applied to the model, we must be able to evaluate whether the model has succeeded in finding a solution.  Optimality conditions are defined to ascertain whether the parameters are indeed the solution to the problem. If the optimality conditions aren't met, the model can provide information on how the current estimate can be improved.
+
+
+
+
 
 So, let's set the context with the machine learning model representation.
 <center>
@@ -483,7 +572,7 @@ $$\text{min}\space f(x)$$
 * The directional derivative tells us the rate of change of a function in any arbitrary direction.    
 * The gradient is the full derivative of a scalar-valued multivariate function, in the form of a vector which contains the partial derivatives with respect to each variable. We use the directional derivative to show that the gradient points in the direction of steepest ascent.
 
-Thanks for your time and attention. This was a bit of a long post, but I hope that you were able to find it useful. Comments and feedback is more than welcome. In the next section, we will survey and contrast the three Gradient Descent variants: Batch, Stochastic, and Minibatch Gradient Descent.
+Thanks for your time and attention. This was a bit of a long post, but I hope that you were able to find it useful. Comments and feedback are more than welcome. In the next section, we will survey and contrast the three Gradient Descent variants: Batch, Stochastic, and Minibatch Gradient Descent.
 
 Cheers,
 
